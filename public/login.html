@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retrospective Login</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page login-page">
+    <main class="card auth-card">
+      <div class="auth-header">
+        <p class="eyebrow">Retrospective Hub</p>
+        <h1>Welcome Back</h1>
+        <p>Enter your details to continue to the lobby.</p>
+      </div>
+      <form id="login-form" class="auth-form">
+        <label class="field">
+          <span>Name</span>
+          <input id="login-name" type="text" placeholder="Your name" required />
+        </label>
+        <label class="field">
+          <span>Role</span>
+          <select id="login-role">
+            <option value="participant">Participant</option>
+            <option value="facilitator">Facilitator</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Team</span>
+          <input
+            id="login-team"
+            type="text"
+            placeholder="e.g. Platform, Web, Mobile"
+            required
+          />
+        </label>
+        <button type="submit" class="primary-btn">Enter Lobby</button>
+      </form>
+    </main>
+    <script src="login.js"></script>
+  </body>
+</html>

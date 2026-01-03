@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retrospective Lobby</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page lobby-page">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Lobby</p>
+        <h1>Retrospectives</h1>
+        <p id="user-summary">Loading user...</p>
+      </div>
+      <div class="header-actions">
+        <a class="secondary-btn" href="/actions">Actions Report</a>
+        <a class="link-btn" href="/">Change user</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Past Retrospectives</h2>
+          <div class="sort-controls">
+            <label for="sort-select">Sort by</label>
+            <select id="sort-select">
+              <option value="date">Newest</option>
+              <option value="team">Team</option>
+            </select>
+          </div>
+        </div>
+        <ul id="retro-list" class="retro-list"></ul>
+      </section>
+
+      <section class="panel" id="create-panel">
+        <h2>Create New Retrospective</h2>
+        <form id="create-form" class="form-grid">
+          <label class="field">
+            <span>Title</span>
+            <input id="create-title" type="text" placeholder="Sprint 42 Retro" required />
+          </label>
+          <label class="field">
+            <span>Team</span>
+            <input id="create-team" type="text" placeholder="Team name" required />
+          </label>
+          <button type="submit" class="primary-btn">Create Retro</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="lobby.js"></script>
+  </body>
+</html>

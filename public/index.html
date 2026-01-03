@@ -11,33 +11,15 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <section class="login" id="login">
-      <form id="login-form">
-        <div>
-          <h2>Join the Retro</h2>
-          <p>Enter your name and choose a role.</p>
-        </div>
-        <input
-          id="login-name"
-          type="text"
-          placeholder="Your name"
-          required
-        />
-        <select id="login-role">
-          <option value="participant">Participant</option>
-          <option value="facilitator">Facilitator</option>
-        </select>
-        <button type="submit">Enter</button>
-      </form>
-    </section>
-
     <header class="app-header">
       <div>
-        <h1>Retrospective</h1>
-        <p>Drag cards between columns. Everyone sees updates live.</p>
+        <a class="back-link" href="/lobby">Back to Lobby</a>
+        <h1 id="retro-title">Retrospective</h1>
+        <p id="retro-meta">Loading retro details...</p>
       </div>
       <div>
         <div class="status" id="status">Connecting...</div>
+        <div class="retro-status" id="retro-status"></div>
         <div class="activity" id="activity">No recent activity</div>
         <div class="presence" id="presence">Online: 0</div>
       </div>

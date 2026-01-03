@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Actions Report</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/dragula@3.7.3/dist/dragula.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page actions-page">
+    <header class="app-header">
+      <div>
+        <a class="back-link" href="/lobby">Back to Lobby</a>
+        <h1>Actions Report</h1>
+        <p>Track actions across every team and retrospective.</p>
+      </div>
+      <div class="header-actions">
+        <div class="status-pill" id="actions-count">Loading actions...</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="actions-board" id="actions-board"></section>
+    </main>
+
+    <script src="https://unpkg.com/dragula@3.7.3/dist/dragula.min.js"></script>
+    <script src="actions.js"></script>
+  </body>
+</html>
