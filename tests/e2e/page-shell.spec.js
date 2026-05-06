@@ -54,6 +54,12 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator("#stat-notes")).toHaveText("1");
   await expect(page.locator("#stat-actions")).toHaveText("1");
   await expect(page.locator("#health-continue")).toHaveText("1");
+  await expect(page.getByRole("link", { name: "View actions report" })).toHaveClass(
+    /primary-btn/
+  );
+  await expect(page.getByRole("link", { name: "Return to lobby" })).toHaveClass(
+    /secondary-btn/
+  );
 
   await page.goto("/actions");
   await expect(page.locator(".actions-summary")).toBeVisible();

@@ -1008,14 +1008,10 @@ textarea {
   gap: 12px;
 }
 
-.sidebar-actions a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.sidebar-actions a:hover {
-  color: var(--primary);
+.sidebar-actions .primary-btn,
+.sidebar-actions .secondary-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .tips-bar {
