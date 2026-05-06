@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retrospective Board</title>
+    <link rel="stylesheet" href="vendor/dragula/dragula.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="retro-page">
+    <header class="app-header session-header">
+      <div class="session-title">
+        <a class="menu-link" href="/lobby" aria-label="Back to Lobby">☰</a>
+        <div>
+          <div class="title-row">
+            <h1 id="retro-title">Retrospective</h1>
+            <div class="retro-status" id="retro-status"></div>
+          </div>
+          <p id="retro-meta">Loading retro details...</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status" id="status">Connecting...</div>
+        <a class="secondary-btn" href="/lobby">Lobby</a>
+        <a class="primary-btn" href="/actions">Actions</a>
+      </div>
+    </header>
+
+    <main class="retro-shell">
+      <section class="retro-workspace">
+        <nav class="session-steps" aria-label="Retrospective steps">
+          <div class="step is-complete">
+            <span>1</span>
+            <strong>Set the Stage</strong>
+          </div>
+          <div class="step is-active">
+            <span>2</span>
+            <strong>Gather Data</strong>
+          </div>
+          <div class="step">
+            <span>3</span>
+            <strong>Generate Insights</strong>
+          </div>
+          <div class="step">
+            <span>4</span>
+            <strong>Decide What to Do</strong>
+          </div>
+          <div class="step">
+            <span>5</span>
+            <strong>Close Retro</strong>
+          </div>
+        </nav>
+
+        <section class="instruction-banner">
+          <p>Add your thoughts to the board. Vote on items you agree with most.</p>
+          <button type="button" class="secondary-btn">Show instructions</button>
+        </section>
+
+        <section class="composer">
+          <form id="card-form">
+            <input
+              id="card-text"
+              type="text"
+              placeholder="Add a new note"
+              required
+            />
+            <textarea
+              id="card-details"
+              placeholder="Add details (optional)"
+              rows="2"
+            ></textarea>
+            <select id="card-column">
+              <option value="well">Start</option>
+              <option value="improve">Stop</option>
+              <option value="action">Continue</option>
+            </select>
+            <button type="submit">Add note</button>
+          </form>
+        </section>
+
+        <section class="board" id="board">
+          <section class="column column-start" data-column="well">
+            <header class="column-header">
+              <div class="column-title">
+                <span class="column-icon">+</span>
+                <div>
+                  <h2>Start</h2>
+                  <p>What should we start doing?</p>
+                </div>
+              </div>
+              <span class="column-count" id="count-well">0</span>
+            </header>
+            <ul class="card-list" id="col-well"></ul>
+          </section>
+          <section class="column column-stop" data-column="improve">
+            <header class="column-header">
+              <div class="column-title">
+                <span class="column-icon">−</span>
+                <div>
+                  <h2>Stop</h2>
+                  <p>What should we stop doing?</p>
+                </div>
+              </div>
+              <span class="column-count" id="count-improve">0</span>
+            </header>
+            <ul class="card-list" id="col-improve"></ul>
+          </section>
+          <section class="column column-continue" data-column="action">
+            <header class="column-header">
+              <div class="column-title">
+                <span class="column-icon">▶</span>
+                <div>
+                  <h2>Continue</h2>
+                  <p>What should we keep doing?</p>
+                </div>
+              </div>
+              <span class="column-count" id="count-action">0</span>
+            </header>
+            <ul class="card-list" id="col-action"></ul>
+          </section>
+        </section>
+      </section>
+
+      <aside class="session-sidebar">
+        <section class="sidebar-panel timer">
+          <div class="sidebar-heading">
+            <h2>Timer</h2>
+            <div class="timer-display" id="timer-display">05:00</div>
+          </div>
+          <div class="timer-controls">
+            <div class="timer-set">
+              <button type="button" id="timer-dec" aria-label="Decrease minutes">−</button>
+              <input id="timer-minutes" type="number" min="1" value="5" />
+              <button type="button" id="timer-inc" aria-label="Increase minutes">+</button>
+            </div>
+            <div class="timer-actions">
+              <button type="button" id="timer-start">Start</button>
+              <button type="button" id="timer-stop">Stop</button>
+              <button type="button" id="timer-reset">Reset</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="sidebar-panel">
+          <h2>Session Timeline</h2>
+          <div class="timeline">
+            <div class="timeline-item is-complete">
+              <span>10:00</span>
+              <strong>Set the Stage</strong>
+              <small>Completed</small>
+            </div>
+            <div class="timeline-item is-active">
+              <span>Now</span>
+              <strong>Gather Data</strong>
+              <small id="activity">No recent activity</small>
+            </div>
+            <div class="timeline-item">
+              <span>Next</span>
+              <strong>Generate Insights</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="sidebar-panel">
+          <div class="sidebar-heading">
+            <h2>Participants</h2>
+            <span class="presence" id="presence">Online: 0</span>
+          </div>
+          <div class="participant-list" id="participant-list"></div>
+        </section>
+
+        <section class="sidebar-panel sidebar-actions">
+          <h2>Actions</h2>
+          <a href="/actions">View actions report</a>
+          <a href="/lobby">Return to lobby</a>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="tips-bar">
+      <span>Tips:</span>
+      <p>Be open and honest</p>
+      <p>Focus on behaviours, not people</p>
+      <p>One conversation at a time</p>
+      <a href="/lobby">Need help?</a>
+    </footer>
+
+    <script src="vendor/dragula/dragula.min.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>

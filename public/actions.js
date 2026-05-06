@@ -1,6 +1,10 @@
 const actionsBoard = document.getElementById("actions-board");
 const actionsCount = document.getElementById("actions-count");
 
+let userName = "";
+let userRole = "participant";
+let userTeam = "";
+
 const STATUS_COLUMNS = [
   { key: "todo", label: "To Do" },
   { key: "in_progress", label: "In Progress" },
@@ -9,6 +13,25 @@ const STATUS_COLUMNS = [
 ];
 
 let dragInstance = null;
+
+function handleUnauthorized(response) {
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem("retroUserName");
+    localStorage.removeItem("retroUserRole");
+    localStorage.removeItem("retroUserTeam");
+    window.location.href = "/";
+    return true;
+  }
+  return false;
+}
+
+async function fetchWithAuth(url, options = {}) {
+  const response = await fetch(url, { ...options, credentials: "same-origin" });
+  if (handleUnauthorized(response)) {
+    return null;
+  }
+  return response;
+}
 
 function formatDate(value) {
   if (!value) {
@@ -67,11 +90,14 @@ function createActionCard(action) {
 }
 
 async function updateAction(retroId, actionId, status, notes) {
-  await fetch("/api/actions", {
+  const response = await fetchWithAuth("/api/actions", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ retroId, actionId, status, notes })
   });
+  if (!response) {
+    return;
+  }
 }
 
 function renderBoard(actions) {
@@ -155,11 +181,42 @@ function renderBoard(actions) {
 }
 
 async function loadActions() {
-  const response = await fetch("/api/actions-report");
+  const response = await fetchWithAuth("/api/actions-report");
+  if (!response) {
+    return;
+  }
   const data = await response.json();
   const actions = data.actions || [];
   actionsCount.textContent = `${actions.length} actions total`;
   renderBoard(actions);
 }
 
-loadActions();
+async function loadSession() {
+  const response = await fetch("/api/session", { credentials: "same-origin" });
+  if (!response.ok) {
+    handleUnauthorized(response);
+    return null;
+  }
+  const data = await response.json();
+  if (!data.user) {
+    handleUnauthorized({ status: 401 });
+    return null;
+  }
+  userName = data.user.name || "";
+  userRole = data.user.role || "participant";
+  userTeam = data.user.team || "";
+  localStorage.setItem("retroUserName", userName);
+  localStorage.setItem("retroUserRole", userRole);
+  localStorage.setItem("retroUserTeam", userTeam);
+  return data.user;
+}
+
+async function init() {
+  const session = await loadSession();
+  if (!session) {
+    return;
+  }
+  await loadActions();
+}
+
+init();

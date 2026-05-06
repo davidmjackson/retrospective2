@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="page lobby-page">
-    <header class="app-header">
+    <header class="app-header page-header">
       <div>
         <p class="eyebrow">Lobby</p>
         <h1>Retrospectives</h1>
@@ -15,12 +15,49 @@
       </div>
       <div class="header-actions">
         <a class="secondary-btn" href="/actions">Actions Report</a>
-        <a class="link-btn" href="/">Change user</a>
+        <button type="button" class="link-btn" id="logout-btn">Log out</button>
       </div>
     </header>
 
     <main class="page-content">
-      <section class="panel">
+      <section class="overview-grid">
+        <div class="overview-card">
+          <span class="overview-icon purple">2</span>
+          <div>
+            <h2>Team Workspace</h2>
+            <p>Create sessions, invite participants, and keep team retros together.</p>
+          </div>
+        </div>
+        <div class="overview-card">
+          <span class="overview-icon green">✓</span>
+          <div>
+            <h2>Action Focus</h2>
+            <p>Open the actions report to track follow-ups across retrospectives.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel key-panel" id="team-key-panel" hidden>
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Team Access</p>
+            <h2>Share This Team Key</h2>
+            <p class="key-text">
+              Team <span id="team-key-team"></span> key:
+              <span class="key-value" id="team-key-value"></span>
+            </p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="secondary-btn" id="team-key-copy">
+              Copy
+            </button>
+            <button type="button" class="link-btn" id="team-key-dismiss">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="panel retro-panel">
         <div class="panel-header">
           <h2>Past Retrospectives</h2>
           <div class="sort-controls">
@@ -34,7 +71,7 @@
         <ul id="retro-list" class="retro-list"></ul>
       </section>
 
-      <section class="panel" id="create-panel">
+      <section class="panel create-retro-panel" id="create-panel">
         <h2>Create New Retrospective</h2>
         <form id="create-form" class="form-grid">
           <label class="field">

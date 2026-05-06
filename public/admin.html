@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page admin-page">
+    <header class="app-header page-header">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h1>Team Keys</h1>
+        <p id="admin-summary">Loading admin...</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="link-btn" id="logout-btn">Log out</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="instruction-banner admin-summary">
+        <p>Manage generated team keys and remove teams that should no longer access retrospectives.</p>
+        <a class="secondary-btn" href="/lobby">Lobby</a>
+      </section>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Teams</h2>
+          <p id="team-count" class="status-pill">Loading...</p>
+        </div>
+        <div class="table-wrap">
+          <table class="team-table">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Key</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="team-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

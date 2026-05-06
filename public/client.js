@@ -4,6 +4,7 @@ const presenceEl = document.getElementById("presence");
 const retroTitle = document.getElementById("retro-title");
 const retroMeta = document.getElementById("retro-meta");
 const retroStatus = document.getElementById("retro-status");
+const participantList = document.getElementById("participant-list");
 const timerDisplay = document.getElementById("timer-display");
 const timerMinutesInput = document.getElementById("timer-minutes");
 const timerInc = document.getElementById("timer-inc");
@@ -16,6 +17,16 @@ const columns = {
   well: document.getElementById("col-well"),
   improve: document.getElementById("col-improve"),
   action: document.getElementById("col-action")
+};
+const columnCounts = {
+  well: document.getElementById("count-well"),
+  improve: document.getElementById("count-improve"),
+  action: document.getElementById("count-action")
+};
+const columnLabels = {
+  well: "Start",
+  improve: "Stop",
+  action: "Continue"
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -30,9 +41,9 @@ let currentState = {
   lastAction: null
 };
 
-let username = localStorage.getItem("retroUserName") || "Anonymous";
-let userRole = localStorage.getItem("retroUserRole") || "participant";
-let userTeam = localStorage.getItem("retroUserTeam") || "";
+let username = "Anonymous";
+let userRole = "participant";
+let userTeam = "";
 let isFacilitator = userRole === "facilitator";
 let isReadOnly = false;
 
@@ -45,8 +56,37 @@ if (!retroId) {
   window.location.href = "/lobby";
 }
 
-if (!localStorage.getItem("retroUserName") || !userTeam) {
-  window.location.href = "/";
+function handleUnauthorized(response) {
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem("retroUserName");
+    localStorage.removeItem("retroUserRole");
+    localStorage.removeItem("retroUserTeam");
+    window.location.href = "/";
+    return true;
+  }
+  return false;
+}
+
+function fetchWithAuth(url, options = {}) {
+  return fetch(url, { ...options, credentials: "same-origin" });
+}
+
+function getInitials(value) {
+  const parts = String(value || "Anonymous")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) {
+    return "A";
+  }
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
+
+function getCardInitials(card) {
+  return getInitials(card.author || card.createdBy || card.owner || card.text);
 }
 
 function renderState(state) {
@@ -55,6 +95,9 @@ function renderState(state) {
     const sortedCards = [...state.columns[key]].sort((a, b) => {
       return (b.votes || 0) - (a.votes || 0);
     });
+    if (columnCounts[key]) {
+      columnCounts[key].textContent = String(sortedCards.length);
+    }
     sortedCards.forEach((card) => {
       const li = document.createElement("li");
       li.className = "card";
@@ -66,9 +109,17 @@ function renderState(state) {
         li.dataset.status = card.status || "todo";
         li.dataset.notes = card.notes || "";
       }
+      const menu = document.createElement("span");
+      menu.className = "card-menu";
+      menu.setAttribute("aria-hidden", "true");
+      menu.textContent = "⋮";
       const strong = document.createElement("strong");
       strong.textContent = card.text;
-      li.appendChild(strong);
+      const header = document.createElement("div");
+      header.className = "card-main";
+      header.appendChild(strong);
+      header.appendChild(menu);
+      li.appendChild(header);
       if (card.details) {
         const details = document.createElement("p");
         details.className = "card-details";
@@ -77,14 +128,18 @@ function renderState(state) {
       }
       const footer = document.createElement("div");
       footer.className = "card-footer";
+      const avatar = document.createElement("span");
+      avatar.className = "avatar";
+      avatar.textContent = getCardInitials(card);
       const votes = document.createElement("span");
       votes.className = "vote-count";
-      votes.textContent = `${card.votes || 0} votes`;
+      votes.textContent = String(card.votes || 0);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "vote-btn";
       button.textContent = "+1";
-      footer.appendChild(votes);
+      footer.appendChild(avatar);
+      button.appendChild(votes);
       footer.appendChild(button);
       li.appendChild(footer);
       columns[key].appendChild(li);
@@ -96,39 +151,36 @@ function renderState(state) {
   }
 }
 
-function readStateFromDom() {
-  const nextState = { columns: { well: [], improve: [], action: [] } };
-  Object.keys(columns).forEach((key) => {
-    const items = columns[key].querySelectorAll(".card");
-    items.forEach((item) => {
-      const card = {
-        id: item.dataset.id,
-        text: item.dataset.text,
-        details: item.dataset.details || "",
-        votes: Number.parseInt(item.dataset.votes || "0", 10)
-      };
-      if (key === "action") {
-        card.status = item.dataset.status || "todo";
-        card.notes = item.dataset.notes || "";
-      }
-      nextState.columns[key].push(card);
-    });
-  });
-  return nextState;
-}
-
-function sendState(state) {
-  if (!socket || socket.readyState !== 1) {
+function renderParticipants(users) {
+  if (!participantList) {
     return;
   }
-  socket.send(JSON.stringify({ type: "setState", state }));
+  participantList.innerHTML = "";
+  users.slice(0, 8).forEach((user) => {
+    const item = document.createElement("span");
+    item.className = "avatar participant-avatar";
+    item.title = user;
+    item.textContent = getInitials(user);
+    participantList.appendChild(item);
+  });
+  if (users.length > 8) {
+    const more = document.createElement("span");
+    more.className = "avatar participant-avatar muted";
+    more.textContent = `+${users.length - 8}`;
+    participantList.appendChild(more);
+  }
 }
 
 function sendMessage(payload) {
   if (!socket || socket.readyState !== 1) {
-    return;
+    return false;
   }
   socket.send(JSON.stringify(payload));
+  return true;
+}
+
+function getColumnKey(listEl) {
+  return Object.keys(columns).find((key) => columns[key] === listEl) || "";
 }
 
 function formatTime(totalSeconds) {
@@ -141,9 +193,21 @@ function updateTimerDisplay() {
   timerDisplay.textContent = formatTime(remainingSeconds);
 }
 
+function getTimerMinutesInputValue() {
+  const parsed = Number.parseInt(timerMinutesInput.value || "1", 10);
+  if (!Number.isFinite(parsed)) {
+    return 1;
+  }
+  return Math.max(1, parsed);
+}
+
 function ensureAudioContext() {
+  const AudioConstructor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioConstructor) {
+    return;
+  }
   if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioContext = new AudioConstructor();
   }
   if (audioContext.state === "suspended") {
     audioContext.resume();
@@ -171,7 +235,7 @@ timerInc.addEventListener("click", () => {
   if (!isFacilitator || isReadOnly) {
     return;
   }
-  const value = Number.parseInt(timerMinutesInput.value || "1", 10) + 1;
+  const value = getTimerMinutesInputValue() + 1;
   timerMinutesInput.value = String(value);
   sendMessage({ type: "timer", action: "set", minutes: value });
 });
@@ -180,7 +244,7 @@ timerDec.addEventListener("click", () => {
   if (!isFacilitator || isReadOnly) {
     return;
   }
-  const value = Number.parseInt(timerMinutesInput.value || "1", 10) - 1;
+  const value = getTimerMinutesInputValue() - 1;
   const minutes = Math.max(1, value);
   timerMinutesInput.value = String(minutes);
   sendMessage({ type: "timer", action: "set", minutes });
@@ -190,7 +254,7 @@ timerMinutesInput.addEventListener("change", () => {
   if (!isFacilitator || isReadOnly) {
     return;
   }
-  const minutes = Math.max(1, Number.parseInt(timerMinutesInput.value || "1", 10));
+  const minutes = getTimerMinutesInputValue();
   timerMinutesInput.value = String(minutes);
   sendMessage({ type: "timer", action: "set", minutes });
 });
@@ -200,7 +264,9 @@ timerStart.addEventListener("click", () => {
     return;
   }
   ensureAudioContext();
-  sendMessage({ type: "timer", action: "start" });
+  const minutes = getTimerMinutesInputValue();
+  timerMinutesInput.value = String(minutes);
+  sendMessage({ type: "timer", action: "start", minutes });
 });
 
 timerStop.addEventListener("click", () => {
@@ -235,13 +301,25 @@ const drake = dragula([columns.well, columns.improve, columns.action], {
   moves: () => !isReadOnly
 });
 
-const handleDragUpdate = () => {
-  currentState = readStateFromDom();
-  currentState.lastAction = {
-    user: username,
-    action: "moved a card"
-  };
-  sendState(currentState);
+const handleDragUpdate = (el, target, source, sibling) => {
+  if (!target || target === source) {
+    renderState(currentState);
+    return;
+  }
+  const targetColumn = getColumnKey(target);
+  if (!targetColumn) {
+    renderState(currentState);
+    return;
+  }
+  const didSend = sendMessage({
+    type: "moveCard",
+    cardId: el.dataset.id,
+    targetColumn,
+    beforeCardId: sibling ? sibling.dataset.id : null
+  });
+  if (!didSend) {
+    renderState(currentState);
+  }
 };
 
 drake.on("drop", handleDragUpdate);
@@ -259,19 +337,10 @@ Object.values(columns).forEach((listEl) => {
     if (!cardEl) {
       return;
     }
-    const currentVotes = Number.parseInt(cardEl.dataset.votes || "0", 10);
-    const nextVotes = currentVotes + 1;
-    cardEl.dataset.votes = String(nextVotes);
-    const counter = cardEl.querySelector(".vote-count");
-    if (counter) {
-      counter.textContent = `${nextVotes} votes`;
-    }
-    currentState = readStateFromDom();
-    currentState.lastAction = {
-      user: username,
-      action: "added a vote"
-    };
-    sendState(currentState);
+    sendMessage({
+      type: "voteCard",
+      cardId: cardEl.dataset.id
+    });
   });
 });
 
@@ -289,25 +358,15 @@ form.addEventListener("submit", (event) => {
   if (!text) {
     return;
   }
-  const newCard = {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  const didSend = sendMessage({
+    type: "addCard",
+    column: columnSelect.value,
     text,
-    details,
-    votes: 0
-  };
-  if (columnSelect.value === "action") {
-    newCard.status = "todo";
-    newCard.notes = "";
+    details
+  });
+  if (!didSend) {
+    return;
   }
-
-  currentState = readStateFromDom();
-  currentState.columns[columnSelect.value].push(newCard);
-  currentState.lastAction = {
-    user: username,
-    action: "added a card"
-  };
-  renderState(currentState);
-  sendState(currentState);
 
   textInput.value = "";
   detailsInput.value = "";
@@ -315,7 +374,12 @@ form.addEventListener("submit", (event) => {
 });
 
 async function loadRetroMeta() {
-  const response = await fetch(`/api/retros/${encodeURIComponent(retroId)}`);
+  const response = await fetchWithAuth(
+    `/api/retros/${encodeURIComponent(retroId)}`
+  );
+  if (handleUnauthorized(response)) {
+    return;
+  }
   if (!response.ok) {
     window.location.href = "/lobby";
     return;
@@ -344,7 +408,10 @@ async function loadRetroMeta() {
 
 function connectSocket() {
   const socketProtocol = location.protocol === "https:" ? "wss" : "ws";
-  socket = new WebSocket(`${socketProtocol}://${location.host}?retroId=${encodeURIComponent(retroId)}`);
+  const query = new URLSearchParams({ retroId });
+  socket = new WebSocket(
+    `${socketProtocol}://${location.host}?${query.toString()}`
+  );
 
   socket.addEventListener("open", () => {
     statusEl.textContent = "Live";
@@ -359,6 +426,17 @@ function connectSocket() {
 
   socket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
+    if (data.type === "error") {
+      if (data.message === "Unauthorized.") {
+        localStorage.removeItem("retroUserName");
+        localStorage.removeItem("retroUserRole");
+        localStorage.removeItem("retroUserTeam");
+        window.location.href = "/";
+      } else {
+        window.location.href = "/lobby";
+      }
+      return;
+    }
     if (data.type === "init" || data.type === "update") {
       currentState = data.retro;
       renderState(currentState);
@@ -390,7 +468,8 @@ function connectSocket() {
 
     if (data.type === "presence") {
       const users = data.users || [];
-      presenceEl.textContent = `Online: ${users.length} ${users.join(", ")}`;
+      presenceEl.textContent = `${users.length} online`;
+      renderParticipants(users);
     }
 
     if (data.type === "retroClosed") {
@@ -403,4 +482,35 @@ function connectSocket() {
   });
 }
 
-loadRetroMeta().then(connectSocket);
+async function loadSession() {
+  const response = await fetch("/api/session", { credentials: "same-origin" });
+  if (!response.ok) {
+    handleUnauthorized(response);
+    return null;
+  }
+  const data = await response.json();
+  if (!data.user) {
+    handleUnauthorized({ status: 401 });
+    return null;
+  }
+  username = data.user.name || "Anonymous";
+  userRole = data.user.role || "participant";
+  userTeam = data.user.team || "";
+  isFacilitator = userRole === "facilitator";
+  applyReadOnlyState();
+  localStorage.setItem("retroUserName", username);
+  localStorage.setItem("retroUserRole", userRole);
+  localStorage.setItem("retroUserTeam", userTeam);
+  return data.user;
+}
+
+async function init() {
+  const session = await loadSession();
+  if (!session) {
+    return;
+  }
+  await loadRetroMeta();
+  connectSocket();
+}
+
+init();

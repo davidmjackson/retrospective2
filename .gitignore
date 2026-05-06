@@ -2,3 +2,11 @@ node_modules/
 .DS_Store
 npm-debug.log
 .env
+state.json
+retros.db
+retros.db-shm
+retros.db-wal
+.playwright-retros.db
+.playwright-retros.db-shm
+.playwright-retros.db-wal
+.playwright-libs/

@@ -5,21 +5,44 @@ const createPanel = document.getElementById("create-panel");
 const createForm = document.getElementById("create-form");
 const createTitle = document.getElementById("create-title");
 const createTeam = document.getElementById("create-team");
+const logoutBtn = document.getElementById("logout-btn");
+const teamKeyPanel = document.getElementById("team-key-panel");
+const teamKeyValue = document.getElementById("team-key-value");
+const teamKeyTeam = document.getElementById("team-key-team");
+const teamKeyCopy = document.getElementById("team-key-copy");
+const teamKeyDismiss = document.getElementById("team-key-dismiss");
 
-const userName = localStorage.getItem("retroUserName");
-const userRole = localStorage.getItem("retroUserRole") || "participant";
-const userTeam = localStorage.getItem("retroUserTeam");
+let userName = "";
+let userRole = "participant";
+let userTeam = "";
 
-if (!userName || !userTeam) {
-  window.location.href = "/";
+function handleUnauthorized(response) {
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem("retroUserName");
+    localStorage.removeItem("retroUserRole");
+    localStorage.removeItem("retroUserTeam");
+    window.location.href = "/";
+    return true;
+  }
+  return false;
 }
 
-userSummary.textContent = `${userName} · ${userRole} · ${userTeam}`;
+async function fetchWithAuth(url, options = {}) {
+  const response = await fetch(url, { ...options, credentials: "same-origin" });
+  if (handleUnauthorized(response)) {
+    return null;
+  }
+  return response;
+}
 
-if (userRole !== "facilitator") {
-  createPanel.style.display = "none";
-} else if (userTeam) {
-  createTeam.value = userTeam;
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    fetch("/api/logout", { method: "POST" });
+    localStorage.removeItem("retroUserName");
+    localStorage.removeItem("retroUserRole");
+    localStorage.removeItem("retroUserTeam");
+    window.location.href = "/";
+  });
 }
 
 let retros = [];
@@ -74,12 +97,12 @@ function renderRetros() {
     actions.className = "retro-actions";
     const status = document.createElement("span");
     status.className = retro.closed ? "pill closed" : "pill open";
-    status.textContent = retro.closed ? "Closed" : "Open";
+    status.textContent = retro.closed ? "Status: Closed" : "Status: Open";
     actions.appendChild(status);
 
     const openLink = document.createElement("a");
     openLink.className = "primary-btn";
-    openLink.href = `/retro?id=${encodeURIComponent(retro.id)}`;
+    openLink.href = `/retrospective?id=${encodeURIComponent(retro.id)}`;
     openLink.textContent = "Open";
     actions.appendChild(openLink);
 
@@ -89,7 +112,7 @@ function renderRetros() {
       closeBtn.className = "secondary-btn";
       closeBtn.textContent = "Close";
       closeBtn.addEventListener("click", async () => {
-        await fetch(`/api/retros/${retro.id}/close`, { method: "POST" });
+        await fetchWithAuth(`/api/retros/${retro.id}/close`, { method: "POST" });
         await loadRetros();
       });
       actions.appendChild(closeBtn);
@@ -102,13 +125,68 @@ function renderRetros() {
 }
 
 async function loadRetros() {
-  const response = await fetch("/api/retros");
+  const response = await fetchWithAuth("/api/retros");
+  if (!response) {
+    return;
+  }
   const data = await response.json();
   retros = data.retros || [];
   renderRetros();
 }
 
 sortSelect.addEventListener("change", renderRetros);
+
+function showTeamKey() {
+  if (!teamKeyPanel || !teamKeyValue || !teamKeyTeam) {
+    return;
+  }
+  const storedKey = localStorage.getItem("retroTeamKey");
+  const storedTeam = localStorage.getItem("retroTeamKeyTeam");
+  if (userRole !== "facilitator") {
+    localStorage.removeItem("retroTeamKey");
+    localStorage.removeItem("retroTeamKeyTeam");
+  }
+  if (
+    userRole === "facilitator" &&
+    storedKey &&
+    storedTeam &&
+    storedTeam.toLowerCase() === userTeam.toLowerCase()
+  ) {
+    teamKeyPanel.hidden = false;
+    teamKeyValue.textContent = storedKey;
+    teamKeyTeam.textContent = storedTeam;
+  } else {
+    teamKeyPanel.hidden = true;
+  }
+}
+
+if (teamKeyCopy) {
+  teamKeyCopy.addEventListener("click", async () => {
+    const value = teamKeyValue ? teamKeyValue.textContent.trim() : "";
+    if (!value) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      teamKeyCopy.textContent = "Copied";
+      setTimeout(() => {
+        teamKeyCopy.textContent = "Copy";
+      }, 1500);
+    } catch (err) {
+      teamKeyCopy.textContent = "Copy";
+    }
+  });
+}
+
+if (teamKeyDismiss) {
+  teamKeyDismiss.addEventListener("click", () => {
+    localStorage.removeItem("retroTeamKey");
+    localStorage.removeItem("retroTeamKeyTeam");
+    if (teamKeyPanel) {
+      teamKeyPanel.hidden = true;
+    }
+  });
+}
 
 if (createForm) {
   createForm.addEventListener("submit", async (event) => {
@@ -118,22 +196,65 @@ if (createForm) {
     if (!title || !team) {
       return;
     }
-    const response = await fetch("/api/retros", {
+    const response = await fetchWithAuth("/api/retros", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, team })
     });
+    if (!response) {
+      return;
+    }
     if (!response.ok) {
       return;
     }
     const data = await response.json();
     const retroId = data.retro?.id;
     if (retroId) {
-      window.location.href = `/retro?id=${encodeURIComponent(retroId)}`;
+      window.location.href = `/retrospective?id=${encodeURIComponent(retroId)}`;
     } else {
       await loadRetros();
     }
   });
 }
 
-loadRetros();
+async function loadSession() {
+  const response = await fetch("/api/session", { credentials: "same-origin" });
+  if (!response.ok) {
+    handleUnauthorized(response);
+    return null;
+  }
+  const data = await response.json();
+  if (!data.user) {
+    handleUnauthorized({ status: 401 });
+    return null;
+  }
+  userName = data.user.name || "";
+  userRole = data.user.role || "participant";
+  userTeam = data.user.team || "";
+  localStorage.setItem("retroUserName", userName);
+  localStorage.setItem("retroUserRole", userRole);
+  localStorage.setItem("retroUserTeam", userTeam);
+  return data.user;
+}
+
+async function init() {
+  const session = await loadSession();
+  if (!session) {
+    return;
+  }
+  userSummary.textContent = `${userName} · ${userRole} · ${userTeam}`;
+  if (userRole === "admin") {
+    window.location.href = "/admin";
+    return;
+  }
+  if (userRole !== "facilitator") {
+    createPanel.style.display = "none";
+  } else if (userTeam) {
+    createTeam.value = userTeam;
+    createTeam.disabled = true;
+  }
+  showTeamKey();
+  await loadRetros();
+}
+
+init();

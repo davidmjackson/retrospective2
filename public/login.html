@@ -7,35 +7,76 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="page login-page">
-    <main class="card auth-card">
-      <div class="auth-header">
+    <main class="login-shell">
+      <section class="login-hero">
         <p class="eyebrow">Retrospective Hub</p>
-        <h1>Welcome Back</h1>
-        <p>Enter your details to continue to the lobby.</p>
-      </div>
-      <form id="login-form" class="auth-form">
-        <label class="field">
-          <span>Name</span>
-          <input id="login-name" type="text" placeholder="Your name" required />
-        </label>
-        <label class="field">
-          <span>Role</span>
-          <select id="login-role">
-            <option value="participant">Participant</option>
-            <option value="facilitator">Facilitator</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>Team</span>
-          <input
-            id="login-team"
-            type="text"
-            placeholder="e.g. Platform, Web, Mobile"
-            required
-          />
-        </label>
-        <button type="submit" class="primary-btn">Enter Lobby</button>
-      </form>
+        <h1>Run focused retros with your team.</h1>
+        <p>
+          Capture feedback, vote on what matters, and carry actions forward from
+          one quiet workspace.
+        </p>
+        <div class="login-preview">
+          <div class="preview-column start"></div>
+          <div class="preview-column stop"></div>
+          <div class="preview-column continue"></div>
+        </div>
+      </section>
+
+      <section class="card auth-card">
+        <div class="auth-header">
+          <p class="eyebrow">Sign In</p>
+          <h2>Welcome Back</h2>
+          <p>Enter your details to continue to the lobby.</p>
+        </div>
+        <form id="login-form" class="auth-form">
+          <label class="field">
+            <span>Name</span>
+            <input id="login-name" type="text" placeholder="Your name" required />
+          </label>
+          <label class="field">
+            <span>Role</span>
+            <select id="login-role">
+              <option value="participant">Participant</option>
+              <option value="facilitator">Facilitator</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Team</span>
+            <input
+              id="login-team"
+              type="text"
+              placeholder="e.g. Platform, Web, Mobile"
+              required
+            />
+          </label>
+          <label class="field" id="create-team-field">
+            <span>Create New Team</span>
+            <div class="field-row">
+              <input id="login-create-team" type="checkbox" />
+              <span>Generate a new team key</span>
+            </div>
+          </label>
+          <label class="field" id="login-key-field">
+            <span>Team Key</span>
+            <input
+              id="login-key"
+              type="text"
+              minlength="5"
+              maxlength="5"
+              pattern="[a-z0-9]{5}"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="e.g. a1b2c"
+              required
+            />
+            <small class="field-hint">5 lowercase letters or digits.</small>
+          </label>
+          <p id="login-error" class="error-text" role="alert"></p>
+          <button type="submit" class="primary-btn">Enter Lobby</button>
+        </form>
+      </section>
     </main>
     <script src="login.js"></script>
   </body>

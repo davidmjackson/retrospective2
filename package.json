@@ -4,10 +4,20 @@
   "description": "Simple realtime retrospective board",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node tests/ws-operations.test.js",
+    "test:e2e": "playwright test",
+    "db:migrate": "node scripts/db-maintenance.js migrate",
+    "db:retention": "node scripts/db-maintenance.js retention",
+    "db:vacuum": "node scripts/db-maintenance.js vacuum"
   },
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.2.4",
     "express": "^4.19.2",
     "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }
