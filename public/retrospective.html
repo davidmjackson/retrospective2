@@ -28,28 +28,24 @@
 
     <main class="retro-shell">
       <section class="retro-workspace">
-        <nav class="session-steps" aria-label="Retrospective steps">
-          <div class="step is-complete">
-            <span>1</span>
-            <strong>Set the Stage</strong>
+        <section class="health-strip" aria-label="Retro health summary">
+          <div class="health-card">
+            <span>Notes</span>
+            <strong id="stat-notes">0</strong>
           </div>
-          <div class="step is-active">
-            <span>2</span>
-            <strong>Gather Data</strong>
+          <div class="health-card">
+            <span>Votes</span>
+            <strong id="stat-votes">0</strong>
           </div>
-          <div class="step">
-            <span>3</span>
-            <strong>Generate Insights</strong>
+          <div class="health-card">
+            <span>Actions</span>
+            <strong id="stat-actions">0</strong>
           </div>
-          <div class="step">
-            <span>4</span>
-            <strong>Decide What to Do</strong>
+          <div class="health-card">
+            <span>Online</span>
+            <strong id="stat-online">0</strong>
           </div>
-          <div class="step">
-            <span>5</span>
-            <strong>Close Retro</strong>
-          </div>
-        </nav>
+        </section>
 
         <section class="instruction-banner">
           <p>Add your thoughts to the board. Vote on items you agree with most.</p>
@@ -144,23 +140,33 @@
           </div>
         </section>
 
-        <section class="sidebar-panel">
-          <h2>Session Timeline</h2>
-          <div class="timeline">
-            <div class="timeline-item is-complete">
-              <span>10:00</span>
-              <strong>Set the Stage</strong>
-              <small>Completed</small>
+        <section class="sidebar-panel retro-health">
+          <h2>Retro Health</h2>
+          <div class="health-status" id="health-status">Collecting input</div>
+          <p class="health-status-detail" id="health-status-detail">
+            Add notes in each column and gather votes.
+          </p>
+          <div class="health-breakdown" aria-label="Column breakdown">
+            <div class="health-row">
+              <span>Start notes</span>
+              <strong id="health-start">0</strong>
             </div>
-            <div class="timeline-item is-active">
-              <span>Now</span>
-              <strong>Gather Data</strong>
-              <small id="activity">No recent activity</small>
+            <div class="health-row">
+              <span>Stop notes</span>
+              <strong id="health-stop">0</strong>
             </div>
-            <div class="timeline-item">
-              <span>Next</span>
-              <strong>Generate Insights</strong>
+            <div class="health-row">
+              <span>Continue notes</span>
+              <strong id="health-continue">0</strong>
             </div>
+            <div class="health-row">
+              <span>Total votes</span>
+              <strong id="health-votes">0</strong>
+            </div>
+          </div>
+          <div class="activity-card">
+            <span>Latest activity</span>
+            <strong id="activity">No recent activity</strong>
           </div>
         </section>
 

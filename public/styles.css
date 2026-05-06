@@ -478,61 +478,58 @@ textarea {
   gap: 12px;
 }
 
-.session-steps {
+.health-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(132px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
   margin-bottom: 26px;
-  overflow-x: auto;
-  padding-bottom: 2px;
 }
 
-.step {
-  min-height: 45px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.health-card {
+  min-height: 78px;
+  padding: 14px 16px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  color: var(--ink);
-  white-space: nowrap;
   box-shadow: var(--shadow-sm);
 }
 
-.step span {
-  width: 23px;
-  height: 23px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  background: #e9eef6;
-  color: #344054;
-  font-size: 0.82rem;
+.health-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
   font-weight: 800;
+  text-transform: uppercase;
 }
 
-.step strong {
-  font-size: 0.86rem;
+.health-card strong {
+  color: var(--ink);
+  font-size: 1.65rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.step.is-active {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(91, 53, 213, 0.08);
+.health-card:nth-child(1) {
+  border-color: var(--green-line);
+  background: linear-gradient(180deg, rgba(237, 249, 241, 0.74), rgba(255, 255, 255, 0.92));
 }
 
-.step.is-active span {
-  background: var(--primary);
-  color: #fff;
+.health-card:nth-child(2) {
+  border-color: #dcd2ff;
+  background: linear-gradient(180deg, #f5f1ff, rgba(255, 255, 255, 0.94));
 }
 
-.step.is-complete span {
-  color: var(--green);
-  background: var(--green-soft);
-  border: 1px solid var(--green-line);
+.health-card:nth-child(3) {
+  border-color: var(--blue-line);
+  background: linear-gradient(180deg, rgba(238, 247, 255, 0.78), rgba(255, 255, 255, 0.94));
+}
+
+.health-card:nth-child(4) {
+  border-color: #f7d789;
+  background: linear-gradient(180deg, #fff7e6, rgba(255, 255, 255, 0.94));
 }
 
 .instruction-banner {
@@ -882,67 +879,95 @@ textarea {
   gap: 8px;
 }
 
-.timeline {
+.retro-health {
   display: grid;
-  gap: 22px;
-  position: relative;
-  margin-left: 8px;
+  gap: 14px;
 }
 
-.timeline::before {
-  content: "";
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 7px;
-  width: 1px;
-  background: var(--line-strong);
+.retro-health h2 {
+  margin-bottom: 0;
 }
 
-.timeline-item {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 10px 16px;
-  position: relative;
-  padding-left: 22px;
+.health-status {
+  padding: 10px 12px;
+  border: 1px solid #f7d789;
+  border-radius: var(--radius);
+  background: #fff7e6;
+  color: #854d0e;
+  font-weight: 800;
 }
 
-.timeline-item::before {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 2px;
-  width: 11px;
-  height: 11px;
-  border-radius: 999px;
-  background: var(--line-strong);
-  border: 2px solid var(--page);
-  z-index: 1;
+.health-status.is-ready {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+  color: var(--green);
 }
 
-.timeline-item.is-complete::before {
-  background: var(--primary);
-}
-
-.timeline-item.is-active::before {
-  background: var(--primary);
-  box-shadow: 0 0 0 4px rgba(91, 53, 213, 0.13);
-}
-
-.timeline-item span {
+.health-status-detail {
+  margin: -4px 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
-.timeline-item strong {
-  font-size: 0.9rem;
+.health-breakdown {
+  display: grid;
+  gap: 8px;
+}
+
+.health-row {
+  min-height: 38px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.health-row span {
+  color: var(--muted);
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
-.timeline-item small {
-  grid-column: 2;
+.health-row strong {
+  min-width: 30px;
+  height: 26px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: #eef4ff;
   color: var(--primary);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-card {
+  padding: 12px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.activity-card span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.activity-card strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .participant-list {
@@ -1430,8 +1455,8 @@ textarea {
     border-right: none;
   }
 
-  .session-steps {
-    grid-template-columns: repeat(5, 170px);
+  .health-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .instruction-banner,

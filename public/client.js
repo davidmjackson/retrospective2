@@ -13,6 +13,18 @@ const timerStart = document.getElementById("timer-start");
 const timerStop = document.getElementById("timer-stop");
 const timerReset = document.getElementById("timer-reset");
 const timerControls = document.querySelector(".timer-controls");
+const healthStats = {
+  notes: document.getElementById("stat-notes"),
+  votes: document.getElementById("stat-votes"),
+  actions: document.getElementById("stat-actions"),
+  online: document.getElementById("stat-online"),
+  status: document.getElementById("health-status"),
+  statusDetail: document.getElementById("health-status-detail"),
+  start: document.getElementById("health-start"),
+  stop: document.getElementById("health-stop"),
+  continueNotes: document.getElementById("health-continue"),
+  healthVotes: document.getElementById("health-votes")
+};
 const columns = {
   well: document.getElementById("col-well"),
   improve: document.getElementById("col-improve"),
@@ -51,6 +63,7 @@ let remainingSeconds = 5 * 60;
 let lastRemainingSeconds = remainingSeconds;
 let audioContext = null;
 let socket = null;
+let onlineUsers = 0;
 
 if (!retroId) {
   window.location.href = "/lobby";
@@ -87,6 +100,71 @@ function getInitials(value) {
 
 function getCardInitials(card) {
   return getInitials(card.author || card.createdBy || card.owner || card.text);
+}
+
+function getRetroStats(state) {
+  const stateColumns = state.columns || {};
+  const counts = {
+    well: (stateColumns.well || []).length,
+    improve: (stateColumns.improve || []).length,
+    action: (stateColumns.action || []).length
+  };
+  const cards = [
+    ...(stateColumns.well || []),
+    ...(stateColumns.improve || []),
+    ...(stateColumns.action || [])
+  ];
+  const totalVotes = cards.reduce((sum, card) => sum + (card.votes || 0), 0);
+
+  return {
+    counts,
+    totalNotes: cards.length,
+    totalVotes,
+    actions: counts.action
+  };
+}
+
+function setText(element, value) {
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function renderHealth(state) {
+  const stats = getRetroStats(state);
+  const hasEveryColumn =
+    stats.counts.well > 0 && stats.counts.improve > 0 && stats.counts.action > 0;
+  const hasVotes = stats.totalVotes >= 3;
+  const readyToDiscuss = hasEveryColumn && hasVotes;
+
+  setText(healthStats.notes, String(stats.totalNotes));
+  setText(healthStats.votes, String(stats.totalVotes));
+  setText(healthStats.actions, String(stats.actions));
+  setText(healthStats.online, String(onlineUsers));
+  setText(healthStats.start, String(stats.counts.well));
+  setText(healthStats.stop, String(stats.counts.improve));
+  setText(healthStats.continueNotes, String(stats.counts.action));
+  setText(healthStats.healthVotes, String(stats.totalVotes));
+
+  if (healthStats.status) {
+    healthStats.status.classList.toggle("is-ready", readyToDiscuss);
+    healthStats.status.textContent = readyToDiscuss
+      ? "Ready to discuss"
+      : "Collecting input";
+  }
+
+  if (healthStats.statusDetail) {
+    if (readyToDiscuss) {
+      healthStats.statusDetail.textContent =
+        "There is input across the board and enough voting signal to focus the discussion.";
+    } else if (!hasEveryColumn) {
+      healthStats.statusDetail.textContent =
+        "Add at least one note to Start, Stop, and Continue.";
+    } else {
+      healthStats.statusDetail.textContent =
+        "Gather at least three votes to identify the strongest discussion points.";
+    }
+  }
 }
 
 function renderState(state) {
@@ -149,6 +227,7 @@ function renderState(state) {
   if (state.lastAction && state.lastAction.user) {
     activityEl.textContent = `${state.lastAction.user} ${state.lastAction.action}`;
   }
+  renderHealth(state);
 }
 
 function renderParticipants(users) {
@@ -468,8 +547,10 @@ function connectSocket() {
 
     if (data.type === "presence") {
       const users = data.users || [];
+      onlineUsers = users.length;
       presenceEl.textContent = `${users.length} online`;
       renderParticipants(users);
+      renderHealth(currentState);
     }
 
     if (data.type === "retroClosed") {
