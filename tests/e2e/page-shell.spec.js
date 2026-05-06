@@ -44,16 +44,22 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await page.getByRole("button", { name: "Create Retro" }).click();
   await expect(page).toHaveURL(/\/retrospective\?id=/);
   await expect(page.locator("#status")).toHaveText("Live");
-  await page.locator("#card-column").selectOption("action");
+  await page.locator("#card-column").selectOption("continue");
   await page.locator("#card-text").fill("Confirm action board styling");
   await page.getByRole("button", { name: "Add note" }).click();
-  await expect(page.locator("#col-action .card")).toContainText(
-    "Confirm action board styling"
-  );
+  const continueCard = page
+    .locator("#col-continue .card")
+    .filter({ hasText: "Confirm action board styling" });
+  await expect(continueCard).toContainText("Confirm action board styling");
   await expect(page.locator(".retro-health")).toContainText("Retro Health");
   await expect(page.locator("#stat-notes")).toHaveText("1");
-  await expect(page.locator("#stat-actions")).toHaveText("1");
+  await expect(page.locator("#stat-actions")).toHaveText("0");
   await expect(page.locator("#health-continue")).toHaveText("1");
+  await continueCard.getByRole("button", { name: /Create action/ }).click();
+  await expect(page.locator("#stat-actions")).toHaveText("1");
+  await expect(
+    continueCard.getByRole("button", { name: /Action already created/ })
+  ).toBeDisabled();
   await expect(page.getByRole("link", { name: "View actions report" })).toHaveClass(
     /primary-btn/
   );

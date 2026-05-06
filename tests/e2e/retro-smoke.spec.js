@@ -43,13 +43,17 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(facilitator.locator("#status")).toHaveText("Live");
     await expect(facilitator.locator("#retro-title")).toHaveText(retroTitle);
 
-    await facilitator.locator("#card-column").selectOption("action");
+    await facilitator.locator("#card-column").selectOption("continue");
     await facilitator.locator("#card-text").fill("Follow up on release checklist");
     await facilitator.locator("#card-details").fill("Owner and due date needed");
     await facilitator.getByRole("button", { name: "Add" }).click();
-    await expect(facilitator.locator("#col-action .card")).toContainText(
-      "Follow up on release checklist"
-    );
+    const followUpCard = facilitator
+      .locator("#col-continue .card")
+      .filter({ hasText: "Follow up on release checklist" });
+    await expect(followUpCard).toBeVisible();
+    await expect(facilitator.locator("#stat-actions")).toHaveText("0");
+    await followUpCard.getByRole("button", { name: /Create action/ }).click();
+    await expect(facilitator.locator("#stat-actions")).toHaveText("1");
 
     await facilitator.locator("#timer-minutes").fill("1");
     await facilitator.locator("#timer-start").click();

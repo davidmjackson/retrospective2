@@ -12,26 +12,41 @@ const defaultTimer = {
 const defaultColumns = {
   well: [],
   improve: [],
-  action: []
+  continue: []
 };
 
-function normalizeActionCard(card) {
+function normalizeActionItem(action) {
   return {
-    ...card,
-    status: card.status || "todo",
-    notes: card.notes || ""
+    id: action.id,
+    sourceCardId: action.sourceCardId || action.source_card_id || null,
+    text: action.text || "",
+    details: action.details || "",
+    owner: action.owner || "",
+    dueDate: action.dueDate || action.due_date || "",
+    status: action.status || "todo",
+    notes: action.notes || "",
+    createdAt: action.createdAt || action.created_at || new Date().toISOString(),
+    createdBy: action.createdBy || action.created_by || ""
   };
 }
 
 function normalizeColumns(columns) {
   const cloneList = (list) =>
-    Array.isArray(list) ? list.map((item) => ({ ...item })) : [];
+    Array.isArray(list)
+      ? list.map((item) => {
+          const card = { ...item };
+          delete card.status;
+          delete card.notes;
+          return card;
+        })
+      : [];
+  const continueCards = Array.isArray(columns.continue)
+    ? columns.continue
+    : columns.action;
   return {
     well: cloneList(columns.well),
     improve: cloneList(columns.improve),
-    action: Array.isArray(columns.action)
-      ? columns.action.map((item) => normalizeActionCard({ ...item }))
-      : []
+    continue: cloneList(continueCards)
   };
 }
 
@@ -51,6 +66,9 @@ function normalizeRetro(retro) {
     closed: Boolean(retro.closed),
     closedAt: retro.closedAt || null,
     columns: normalizeColumns(retro.columns || defaultColumns),
+    actions: Array.isArray(retro.actions)
+      ? retro.actions.map((action) => normalizeActionItem(action))
+      : [],
     timer: normalizeTimer(retro.timer),
     lastAction: retro.lastAction || null
   };
@@ -202,7 +220,12 @@ function deleteTeamById(db, teamId) {
 }
 
 function createNormalizedSchema(db, tables) {
-  db.exec(`CREATE TABLE IF NOT EXISTS ${tables.retros} (
+  const tableNames = {
+    retros: tables.retros,
+    cards: tables.cards,
+    actions: tables.actions || "actions"
+  };
+  db.exec(`CREATE TABLE IF NOT EXISTS ${tableNames.retros} (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     team TEXT NOT NULL,
@@ -216,7 +239,7 @@ function createNormalizedSchema(db, tables) {
     last_action_json TEXT,
     updated_at TEXT NOT NULL
   )`);
-  db.exec(`CREATE TABLE IF NOT EXISTS ${tables.cards} (
+  db.exec(`CREATE TABLE IF NOT EXISTS ${tableNames.cards} (
     id TEXT PRIMARY KEY,
     retro_id TEXT NOT NULL,
     column_type TEXT NOT NULL,
@@ -226,19 +249,40 @@ function createNormalizedSchema(db, tables) {
     status TEXT,
     notes TEXT,
     updated_at TEXT NOT NULL,
-    FOREIGN KEY (retro_id) REFERENCES ${tables.retros}(id) ON DELETE CASCADE
+    FOREIGN KEY (retro_id) REFERENCES ${tableNames.retros}(id) ON DELETE CASCADE
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS ${tableNames.actions} (
+    id TEXT PRIMARY KEY,
+    retro_id TEXT NOT NULL,
+    source_card_id TEXT,
+    text TEXT NOT NULL,
+    details TEXT,
+    owner TEXT,
+    due_date TEXT,
+    status TEXT NOT NULL,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (retro_id) REFERENCES ${tableNames.retros}(id) ON DELETE CASCADE
   )`);
   db.exec(
-    `CREATE INDEX IF NOT EXISTS idx_${tables.cards}_retro ON ${tables.cards}(retro_id)`
+    `CREATE INDEX IF NOT EXISTS idx_${tableNames.cards}_retro ON ${tableNames.cards}(retro_id)`
   );
   db.exec(
-    `CREATE INDEX IF NOT EXISTS idx_${tables.cards}_retro_column ON ${tables.cards}(retro_id, column_type)`
+    `CREATE INDEX IF NOT EXISTS idx_${tableNames.cards}_retro_column ON ${tableNames.cards}(retro_id, column_type)`
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_${tableNames.actions}_retro ON ${tableNames.actions}(retro_id)`
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_${tableNames.actions}_retro_status ON ${tableNames.actions}(retro_id, status)`
   );
 }
 
 function collectCards(retro) {
   const cards = [];
-  ["well", "improve", "action"].forEach((column) => {
+  ["well", "improve", "continue"].forEach((column) => {
     (retro.columns[column] || []).forEach((card) => {
       cards.push({
         id: card.id,
@@ -246,12 +290,16 @@ function collectCards(retro) {
         text: card.text,
         details: card.details || "",
         votes: Number.isFinite(card.votes) ? card.votes : 0,
-        status: column === "action" ? card.status || "todo" : null,
-        notes: column === "action" ? card.notes || "" : null
+        status: null,
+        notes: null
       });
     });
   });
   return cards;
+}
+
+function collectActions(retro) {
+  return (retro.actions || []).map((action) => normalizeActionItem(action));
 }
 
 function runRetroUpsert(db, tableName, retro, timestamp) {
@@ -310,8 +358,8 @@ function normalizeCardForPersistence(card, columnType) {
     text: card.text,
     details: card.details || "",
     votes: Number.isFinite(card.votes) ? card.votes : 0,
-    status: columnType === "action" ? card.status || "todo" : null,
-    notes: columnType === "action" ? card.notes || "" : null
+    status: null,
+    notes: null
   };
 }
 
@@ -353,6 +401,53 @@ function runCardUpsert(db, tableName, retroId, columnType, card, timestamp) {
   );
 }
 
+function runActionUpsert(db, tableName, retroId, action, timestamp) {
+  const normalized = normalizeActionItem(action);
+  const actionStmt = db.prepare(
+    `INSERT INTO ${tableName} (
+      id,
+      retro_id,
+      source_card_id,
+      text,
+      details,
+      owner,
+      due_date,
+      status,
+      notes,
+      created_at,
+      created_by,
+      updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      retro_id = excluded.retro_id,
+      source_card_id = excluded.source_card_id,
+      text = excluded.text,
+      details = excluded.details,
+      owner = excluded.owner,
+      due_date = excluded.due_date,
+      status = excluded.status,
+      notes = excluded.notes,
+      created_at = excluded.created_at,
+      created_by = excluded.created_by,
+      updated_at = excluded.updated_at`
+  );
+
+  actionStmt.run(
+    normalized.id,
+    retroId,
+    normalized.sourceCardId,
+    normalized.text,
+    normalized.details,
+    normalized.owner,
+    normalized.dueDate,
+    normalized.status,
+    normalized.notes,
+    normalized.createdAt,
+    normalized.createdBy,
+    timestamp
+  );
+}
+
 function saveRetro(db, retro, callback) {
   try {
     runRetroUpsert(db, "retros", retro, new Date().toISOString());
@@ -368,6 +463,20 @@ function saveRetroCard(db, retro, columnType, card, callback) {
     const tx = db.transaction(() => {
       const normalized = runRetroUpsert(db, "retros", retro, timestamp);
       runCardUpsert(db, "cards", normalized.id, columnType, card, timestamp);
+    });
+    tx();
+    callback();
+  } catch (err) {
+    callback(err);
+  }
+}
+
+function saveRetroAction(db, retro, action, callback) {
+  try {
+    const timestamp = new Date().toISOString();
+    const tx = db.transaction(() => {
+      const normalized = runRetroUpsert(db, "retros", retro, timestamp);
+      runActionUpsert(db, "actions", normalized.id, action, timestamp);
     });
     tx();
     callback();
@@ -403,12 +512,20 @@ function saveRetroTimer(db, retro, callback) {
 
 function saveRetros(db, retros, callback, options = {}) {
   try {
-    const tables = options.tables || { retros: "retros", cards: "cards" };
+    const tables = {
+      retros: "retros",
+      cards: "cards",
+      actions: "actions",
+      ...(options.tables || {})
+    };
     const deleteExisting = options.deleteExisting !== false;
     const timestamp = new Date().toISOString();
 
-    const deleteStmt = deleteExisting
+    const deleteCardsStmt = deleteExisting
       ? db.prepare(`DELETE FROM ${tables.cards} WHERE retro_id = ?`)
+      : null;
+    const deleteActionsStmt = deleteExisting
+      ? db.prepare(`DELETE FROM ${tables.actions} WHERE retro_id = ?`)
       : null;
     const cardStmt = db.prepare(
       `INSERT INTO ${tables.cards} (
@@ -423,12 +540,31 @@ function saveRetros(db, retros, callback, options = {}) {
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
+    const actionStmt = db.prepare(
+      `INSERT INTO ${tables.actions} (
+        id,
+        retro_id,
+        source_card_id,
+        text,
+        details,
+        owner,
+        due_date,
+        status,
+        notes,
+        created_at,
+        created_by,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
 
     const tx = db.transaction(() => {
       retros.forEach((retro) => {
         const normalized = runRetroUpsert(db, tables.retros, retro, timestamp);
-        if (deleteStmt) {
-          deleteStmt.run(normalized.id);
+        if (deleteCardsStmt) {
+          deleteCardsStmt.run(normalized.id);
+        }
+        if (deleteActionsStmt) {
+          deleteActionsStmt.run(normalized.id);
         }
         const cards = collectCards(normalized);
         cards.forEach((card) => {
@@ -444,6 +580,22 @@ function saveRetros(db, retros, callback, options = {}) {
             timestamp
           );
         });
+        collectActions(normalized).forEach((action) => {
+          actionStmt.run(
+            action.id,
+            normalized.id,
+            action.sourceCardId,
+            action.text,
+            action.details,
+            action.owner,
+            action.dueDate,
+            action.status,
+            action.notes,
+            action.createdAt,
+            action.createdBy,
+            timestamp
+          );
+        });
       });
     });
 
@@ -456,7 +608,7 @@ function saveRetros(db, retros, callback, options = {}) {
 
 function migrateLegacyJsonTable(db, callback) {
   try {
-    const tempTables = { retros: "retros_v2", cards: "cards_v2" };
+    const tempTables = { retros: "retros_v2", cards: "cards_v2", actions: "actions_v2" };
     createNormalizedSchema(db, tempTables);
     const rows = db.prepare("SELECT data_json FROM retros").all();
     const retros = [];
@@ -488,9 +640,14 @@ function migrateLegacyJsonTable(db, callback) {
           db.exec("DROP TABLE retros");
           db.exec("ALTER TABLE retros_v2 RENAME TO retros");
           db.exec("ALTER TABLE cards_v2 RENAME TO cards");
+          db.exec("ALTER TABLE actions_v2 RENAME TO actions");
           db.exec("CREATE INDEX IF NOT EXISTS idx_cards_retro ON cards(retro_id)");
           db.exec(
             "CREATE INDEX IF NOT EXISTS idx_cards_retro_column ON cards(retro_id, column_type)"
+          );
+          db.exec("CREATE INDEX IF NOT EXISTS idx_actions_retro ON actions(retro_id)");
+          db.exec(
+            "CREATE INDEX IF NOT EXISTS idx_actions_retro_status ON actions(retro_id, status)"
           );
         });
         tx();
@@ -516,9 +673,9 @@ function ensureSchema(db, callback) {
       createNormalizedSchema(db, { retros: "retros", cards: "cards" });
       createTeamsSchema(db);
       backfillTeamsFromRetros(db);
-      if (version < 3) {
+      if (version < 4) {
         db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3')"
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
         );
       }
       callback();
@@ -537,7 +694,7 @@ function ensureSchema(db, callback) {
         createTeamsSchema(db);
         backfillTeamsFromRetros(db);
         db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3')"
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
         );
         callback();
       });
@@ -547,7 +704,7 @@ function ensureSchema(db, callback) {
     createTeamsSchema(db);
     backfillTeamsFromRetros(db);
     db.exec(
-      "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3')"
+      "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
     );
     callback();
   } catch (err) {
@@ -563,6 +720,7 @@ function loadRetros(db, callback) {
       return;
     }
     const cardRows = db.prepare("SELECT * FROM cards").all();
+    const actionRows = db.prepare("SELECT * FROM actions").all();
     const cardsByRetro = new Map();
     (cardRows || []).forEach((card) => {
       if (!cardsByRetro.has(card.retro_id)) {
@@ -570,12 +728,20 @@ function loadRetros(db, callback) {
       }
       cardsByRetro.get(card.retro_id).push(card);
     });
+    const actionsByRetro = new Map();
+    (actionRows || []).forEach((action) => {
+      if (!actionsByRetro.has(action.retro_id)) {
+        actionsByRetro.set(action.retro_id, []);
+      }
+      actionsByRetro.get(action.retro_id).push(action);
+    });
 
     const retros = retroRows.map((row) => {
-      const columns = { well: [], improve: [], action: [] };
+      const columns = { well: [], improve: [], continue: [] };
       const cards = cardsByRetro.get(row.id) || [];
       cards.forEach((card) => {
-        if (!columns[card.column_type]) {
+        const columnType = card.column_type === "action" ? "continue" : card.column_type;
+        if (!columns[columnType]) {
           return;
         }
         const mapped = {
@@ -584,12 +750,11 @@ function loadRetros(db, callback) {
           details: card.details || "",
           votes: Number.isFinite(card.votes) ? card.votes : 0
         };
-        if (card.column_type === "action") {
-          mapped.status = card.status || "todo";
-          mapped.notes = card.notes || "";
-        }
-        columns[card.column_type].push(mapped);
+        columns[columnType].push(mapped);
       });
+      const actions = (actionsByRetro.get(row.id) || []).map((action) =>
+        normalizeActionItem(action)
+      );
 
       let lastAction = null;
       if (row.last_action_json) {
@@ -608,6 +773,7 @@ function loadRetros(db, callback) {
         closed: Boolean(row.closed),
         closedAt: row.closed_at,
         columns,
+        actions,
         timer: {
           durationSeconds: row.timer_duration_seconds,
           remainingSeconds: row.timer_remaining_seconds,
@@ -683,6 +849,9 @@ function applyRetention(db, days, callback) {
     ).toISOString();
     const tx = db.transaction(() => {
       db.prepare(
+        "DELETE FROM actions WHERE retro_id IN (SELECT id FROM retros WHERE closed = 1 AND closed_at IS NOT NULL AND closed_at < ?)"
+      ).run(cutoff);
+      db.prepare(
         "DELETE FROM cards WHERE retro_id IN (SELECT id FROM retros WHERE closed = 1 AND closed_at IS NOT NULL AND closed_at < ?)"
       ).run(cutoff);
       db.prepare(
@@ -699,7 +868,7 @@ function applyRetention(db, days, callback) {
 module.exports = {
   defaultTimer,
   defaultColumns,
-  normalizeActionCard,
+  normalizeActionItem,
   normalizeColumns,
   normalizeTimer,
   normalizeRetro,
@@ -708,6 +877,7 @@ module.exports = {
   loadRetros,
   saveRetro,
   saveRetroCard,
+  saveRetroAction,
   saveRetroTimer,
   saveRetros,
   seedFromJsonIfPresent,

@@ -54,17 +54,16 @@
             "votes": 1
           }
         ],
-        "action": [
+        "continue": [
           {
             "id": "1767197931218-295d5af20bca78",
             "text": "zzzzzzzzz",
             "details": "",
-            "votes": 2,
-            "status": "todo",
-            "notes": ""
+            "votes": 2
           }
         ]
       },
+      "actions": [],
       "timer": {
         "durationSeconds": 300,
         "remainingSeconds": 300,
@@ -86,8 +85,9 @@
       "columns": {
         "well": [],
         "improve": [],
-        "action": []
+        "continue": []
       },
+      "actions": [],
       "timer": {
         "durationSeconds": 300,
         "remainingSeconds": 300,
@@ -113,8 +113,9 @@
           }
         ],
         "improve": [],
-        "action": []
+        "continue": []
       },
+      "actions": [],
       "timer": {
         "durationSeconds": 300,
         "remainingSeconds": 300,

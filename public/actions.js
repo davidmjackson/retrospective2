@@ -61,7 +61,8 @@ function createActionCard(action) {
 
   const meta = document.createElement("p");
   meta.className = "action-meta";
-  meta.textContent = `${action.team} · ${action.retroTitle} · ${formatDate(
+  const owner = action.owner ? `Owner: ${action.owner}` : "Owner not set";
+  meta.textContent = `${owner} · ${action.team} · ${action.retroTitle} · ${formatDate(
     action.createdAt
   )}`;
   card.appendChild(meta);

@@ -11,6 +11,7 @@ const {
   loadRetros,
   saveRetro,
   saveRetroCard,
+  saveRetroAction,
   saveRetroTimer,
   saveRetros,
   seedFromJsonIfPresent,
@@ -70,8 +71,9 @@ function createRetro({ title, team }) {
     columns: {
       well: [],
       improve: [],
-      action: []
+      continue: []
     },
+    actions: [],
     timer: null,
     lastAction: null
   });
@@ -153,6 +155,17 @@ function persistRetroCard(retro, columnType, card) {
     if (err) {
       didSave = false;
       console.warn("Failed to persist retro card.");
+    }
+  });
+  return didSave;
+}
+
+function persistRetroAction(retro, action) {
+  let didSave = true;
+  saveRetroAction(db, retro, action, (err) => {
+    if (err) {
+      didSave = false;
+      console.warn("Failed to persist retro action.");
     }
   });
   return didSave;
@@ -397,10 +410,14 @@ function validateTimerMinutes(value) {
 }
 
 function validateColumnName(value, field = "Column") {
-  if (typeof value !== "string" || !["well", "improve", "action"].includes(value)) {
+  if (typeof value !== "string") {
     return { error: `${field} is invalid.` };
   }
-  return { value };
+  const normalized = value === "action" ? "continue" : value;
+  if (!["well", "improve", "continue"].includes(normalized)) {
+    return { error: `${field} is invalid.` };
+  }
+  return { value: normalized };
 }
 
 function createCardId() {
@@ -408,6 +425,13 @@ function createCardId() {
     return `card-${crypto.randomUUID()}`;
   }
   return `card-${Date.now()}-${crypto.randomBytes(8).toString("hex")}`;
+}
+
+function createActionId() {
+  if (typeof crypto.randomUUID === "function") {
+    return `action-${crypto.randomUUID()}`;
+  }
+  return `action-${Date.now()}-${crypto.randomBytes(8).toString("hex")}`;
 }
 
 function setLastAction(retro, user, action) {
@@ -418,7 +442,7 @@ function setLastAction(retro, user, action) {
 }
 
 function findCardLocation(retro, cardId) {
-  for (const column of ["well", "improve", "action"]) {
+  for (const column of ["well", "improve", "continue"]) {
     const index = retro.columns[column].findIndex((card) => card.id === cardId);
     if (index !== -1) {
       return { column, index, card: retro.columns[column][index] };
@@ -454,10 +478,6 @@ function addCardToRetro(retro, data, auth) {
     details: details.value,
     votes: 0
   };
-  if (column.value === "action") {
-    card.status = "todo";
-    card.notes = "";
-  }
   retro.columns[column.value].push(card);
   setLastAction(retro, auth.name, "added a card");
   return { value: { card, columnType: column.value } };
@@ -513,13 +533,8 @@ function moveCardInRetro(retro, data, auth) {
   }
 
   const [card] = retro.columns[location.column].splice(location.index, 1);
-  if (targetColumn.value === "action") {
-    card.status = card.status || "todo";
-    card.notes = card.notes || "";
-  } else {
-    delete card.status;
-    delete card.notes;
-  }
+  delete card.status;
+  delete card.notes;
 
   const targetList = retro.columns[targetColumn.value];
   const beforeIndex = beforeCardId
@@ -534,8 +549,49 @@ function moveCardInRetro(retro, data, auth) {
   return { value: { card, columnType: targetColumn.value } };
 }
 
+function createActionFromCard(retro, data, auth) {
+  const cardId = validateId(data.cardId, "Card id");
+  if (cardId.error) {
+    return cardId;
+  }
+  const location = findCardLocation(retro, cardId.value);
+  if (!location) {
+    return { error: "Card not found." };
+  }
+  const existing = (retro.actions || []).find(
+    (action) => action.sourceCardId === location.card.id
+  );
+  if (existing) {
+    return { value: { action: existing, created: false } };
+  }
+
+  const action = {
+    id: createActionId(),
+    sourceCardId: location.card.id,
+    text: location.card.text,
+    details: location.card.details || "",
+    owner: auth.name || "Anonymous",
+    dueDate: "",
+    status: "todo",
+    notes: "",
+    createdAt: new Date().toISOString(),
+    createdBy: auth.name || "Anonymous"
+  };
+  retro.actions = retro.actions || [];
+  retro.actions.push(action);
+  setLastAction(retro, auth.name, "created an action");
+  return { value: { action, created: true } };
+}
+
 function persistCardAndBroadcastRetro(retro, mutation) {
   if (!persistRetroCard(retro, mutation.columnType, mutation.card)) {
+    return;
+  }
+  broadcastToRetro(retro.id, { type: "update", retro });
+}
+
+function persistActionAndBroadcastRetro(retro, mutation) {
+  if (!persistRetroAction(retro, mutation.action)) {
     return;
   }
   broadcastToRetro(retro.id, { type: "update", retro });
@@ -1114,12 +1170,15 @@ app.get("/api/actions-report", (req, res) => {
     if ((retro.team || "").toLowerCase() !== auth.normalizedTeam) {
       return;
     }
-    retro.columns.action.forEach((action) => {
+    (retro.actions || []).forEach((action) => {
       actions.push({
         retroId: retro.id,
         actionId: action.id,
+        sourceCardId: action.sourceCardId || null,
         text: action.text,
         details: action.details || "",
+        owner: action.owner || "",
+        dueDate: action.dueDate || "",
         notes: action.notes || "",
         status: action.status || "todo",
         team: retro.team,
@@ -1169,7 +1228,7 @@ app.put("/api/actions", (req, res) => {
     res.status(404).json({ error: "Retro not found." });
     return;
   }
-  const action = retro.columns.action.find(
+  const action = (retro.actions || []).find(
     (item) => item.id === validatedActionId.value
   );
   if (!action) {
@@ -1182,7 +1241,7 @@ app.put("/api/actions", (req, res) => {
   if (nextNotes !== undefined) {
     action.notes = nextNotes;
   }
-  if (!persistRetroCard(retro, "action", action)) {
+  if (!persistRetroAction(retro, action)) {
     res.status(500).json({ error: "Unable to persist action." });
     return;
   }
@@ -1340,6 +1399,18 @@ wss.on("connection", (ws, req) => {
         return;
       }
       persistCardAndBroadcastRetro(retro, result.value);
+      return;
+    }
+
+    if (data.type === "createAction") {
+      if (retro.closed) {
+        return;
+      }
+      const result = createActionFromCard(retro, data, auth);
+      if (result.error) {
+        return;
+      }
+      persistActionAndBroadcastRetro(retro, result.value);
     }
   });
 

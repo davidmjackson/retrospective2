@@ -363,19 +363,32 @@ async function main() {
       JSON.stringify({
         type: "moveCard",
         cardId,
-        targetColumn: "action",
+        targetColumn: "continue",
         beforeCardId: null
       })
     );
     const afterMove = await nextMessage(
       socket,
-      (message) => message.type === "update" && message.retro.columns.action.length === 1,
-      "move to action update"
+      (message) => message.type === "update" && message.retro.columns.continue.length === 1,
+      "move to continue update"
     );
-    const actionCard = afterMove.retro.columns.action[0];
-    assert(actionCard.id === cardId, "Moved action card id changed.");
-    assert(actionCard.status === "todo", "Moved action card did not get todo status.");
-    assert(actionCard.votes === 2, "Moved action card lost votes.");
+    const continueCard = afterMove.retro.columns.continue[0];
+    assert(continueCard.id === cardId, "Moved continue card id changed.");
+    assert(!continueCard.status, "Continue card should not have action status.");
+    assert(continueCard.votes === 2, "Moved continue card lost votes.");
+
+    socket.send(JSON.stringify({ type: "createAction", cardId }));
+    const afterActionCreate = await nextMessage(
+      socket,
+      (message) => message.type === "update" && message.retro.actions?.length === 1,
+      "create action update"
+    );
+    const actionId = afterActionCreate.retro.actions[0].id;
+    assert(actionId, "Action item id was not assigned.");
+    assert(
+      afterActionCreate.retro.actions[0].sourceCardId === cardId,
+      "Action item is not linked to the source card."
+    );
 
     facilitatorSocket = await openSocket(baseWsUrl, retroId, facilitatorLogin.cookie);
     await nextMessage(
@@ -445,7 +458,7 @@ async function main() {
         method: "PUT",
         body: JSON.stringify({
           retroId,
-          actionId: cardId,
+          actionId,
           status: "invalid"
         })
       },
@@ -470,7 +483,7 @@ async function main() {
     socket.send(
       JSON.stringify({
         type: "addCard",
-        column: "action",
+        column: "continue",
         text: "Should not persist after close",
         details: ""
       })
@@ -486,7 +499,7 @@ async function main() {
     assert(closedRetro.status === 200, "Participant could not reload closed retro.");
     assert(closedRetro.body.retro.closed === true, "Retro was not marked closed.");
     assert(
-      closedRetro.body.retro.columns.action.length === 1,
+      closedRetro.body.retro.columns.continue.length === 1,
       "Closed retro accepted a WebSocket mutation."
     );
 
@@ -498,9 +511,22 @@ async function main() {
         )
         .get(cardId, retroId);
       assert(persistedCard, "Card operation was not persisted to SQLite.");
-      assert(persistedCard.column_type === "action", "Persisted card column is wrong.");
+      assert(persistedCard.column_type === "continue", "Persisted card column is wrong.");
       assert(persistedCard.votes === 2, "Persisted card vote count is wrong.");
-      assert(persistedCard.status === "todo", "Persisted action status is wrong.");
+      assert(persistedCard.status === null, "Persisted continue card has action status.");
+
+      const persistedAction = persistedDb
+        .prepare(
+          "SELECT source_card_id, status, owner FROM actions WHERE id = ? AND retro_id = ?"
+        )
+        .get(actionId, retroId);
+      assert(persistedAction, "Action item was not persisted to SQLite.");
+      assert(
+        persistedAction.source_card_id === cardId,
+        "Persisted action source card is wrong."
+      );
+      assert(persistedAction.status === "todo", "Persisted action status is wrong.");
+      assert(persistedAction.owner === "Participant", "Persisted action owner is wrong.");
 
       const persistedRetro = persistedDb
         .prepare(

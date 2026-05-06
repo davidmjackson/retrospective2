@@ -5,8 +5,8 @@ Simple realtime retrospective board with a lobby, live board, and actions report
 ## Overview
 - Login collects name, role, team, and a shared team key (stored in localStorage).
 - Lobby lists retros, allows facilitators to create and close retros.
-- Retrospective board supports notes, details, votes, drag/drop, and a shared timer.
-- Actions report aggregates action items across teams with a simple kanban view.
+- Retrospective board supports Start/Stop/Continue notes, details, votes, drag/drop, and a shared timer.
+- Actions are created deliberately from retro notes and aggregated across teams in a simple kanban view.
 
 ## Tech Stack
 - Node.js + Express

@@ -28,17 +28,17 @@ const healthStats = {
 const columns = {
   well: document.getElementById("col-well"),
   improve: document.getElementById("col-improve"),
-  action: document.getElementById("col-action")
+  continue: document.getElementById("col-continue")
 };
 const columnCounts = {
   well: document.getElementById("count-well"),
   improve: document.getElementById("count-improve"),
-  action: document.getElementById("count-action")
+  continue: document.getElementById("count-continue")
 };
 const columnLabels = {
   well: "Start",
   improve: "Stop",
-  action: "Continue"
+  continue: "Continue"
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -48,8 +48,9 @@ let currentState = {
   columns: {
     well: [],
     improve: [],
-    action: []
+    continue: []
   },
+  actions: [],
   lastAction: null
 };
 
@@ -107,12 +108,13 @@ function getRetroStats(state) {
   const counts = {
     well: (stateColumns.well || []).length,
     improve: (stateColumns.improve || []).length,
-    action: (stateColumns.action || []).length
+    continue: (stateColumns.continue || stateColumns.action || []).length
   };
+  const actionItems = state.actions || [];
   const cards = [
     ...(stateColumns.well || []),
     ...(stateColumns.improve || []),
-    ...(stateColumns.action || [])
+    ...(stateColumns.continue || stateColumns.action || [])
   ];
   const totalVotes = cards.reduce((sum, card) => sum + (card.votes || 0), 0);
 
@@ -120,7 +122,7 @@ function getRetroStats(state) {
     counts,
     totalNotes: cards.length,
     totalVotes,
-    actions: counts.action
+    actions: actionItems.length
   };
 }
 
@@ -133,7 +135,9 @@ function setText(element, value) {
 function renderHealth(state) {
   const stats = getRetroStats(state);
   const hasEveryColumn =
-    stats.counts.well > 0 && stats.counts.improve > 0 && stats.counts.action > 0;
+    stats.counts.well > 0 &&
+    stats.counts.improve > 0 &&
+    stats.counts.continue > 0;
   const hasVotes = stats.totalVotes >= 3;
   const readyToDiscuss = hasEveryColumn && hasVotes;
 
@@ -143,7 +147,7 @@ function renderHealth(state) {
   setText(healthStats.online, String(onlineUsers));
   setText(healthStats.start, String(stats.counts.well));
   setText(healthStats.stop, String(stats.counts.improve));
-  setText(healthStats.continueNotes, String(stats.counts.action));
+  setText(healthStats.continueNotes, String(stats.counts.continue));
   setText(healthStats.healthVotes, String(stats.totalVotes));
 
   if (healthStats.status) {
@@ -168,9 +172,14 @@ function renderHealth(state) {
 }
 
 function renderState(state) {
+  const actionSourceIds = new Set(
+    (state.actions || []).map((action) => action.sourceCardId).filter(Boolean)
+  );
   Object.keys(columns).forEach((key) => {
     columns[key].innerHTML = "";
-    const sortedCards = [...state.columns[key]].sort((a, b) => {
+    const cards =
+      state.columns[key] || (key === "continue" ? state.columns.action || [] : []);
+    const sortedCards = [...cards].sort((a, b) => {
       return (b.votes || 0) - (a.votes || 0);
     });
     if (columnCounts[key]) {
@@ -183,10 +192,6 @@ function renderState(state) {
       li.dataset.text = card.text;
       li.dataset.votes = String(card.votes || 0);
       li.dataset.details = card.details || "";
-      if (key === "action") {
-        li.dataset.status = card.status || "todo";
-        li.dataset.notes = card.notes || "";
-      }
       const menu = document.createElement("span");
       menu.className = "card-menu";
       menu.setAttribute("aria-hidden", "true");
@@ -216,9 +221,26 @@ function renderState(state) {
       button.type = "button";
       button.className = "vote-btn";
       button.textContent = "+1";
+      const actionButton = document.createElement("button");
+      actionButton.type = "button";
+      actionButton.className = "create-action-btn";
+      actionButton.textContent = actionSourceIds.has(card.id)
+        ? "Action created"
+        : "Create action";
+      actionButton.disabled = actionSourceIds.has(card.id);
+      actionButton.setAttribute(
+        "aria-label",
+        actionSourceIds.has(card.id)
+          ? `Action already created for ${card.text}`
+          : `Create action for ${card.text}`
+      );
+      const cardControls = document.createElement("div");
+      cardControls.className = "card-controls";
       footer.appendChild(avatar);
       button.appendChild(votes);
-      footer.appendChild(button);
+      cardControls.appendChild(actionButton);
+      cardControls.appendChild(button);
+      footer.appendChild(cardControls);
       li.appendChild(footer);
       columns[key].appendChild(li);
     });
@@ -376,7 +398,7 @@ if (timerControls) {
   timerControls.hidden = true;
 }
 
-const drake = dragula([columns.well, columns.improve, columns.action], {
+const drake = dragula([columns.well, columns.improve, columns.continue], {
   moves: () => !isReadOnly
 });
 
@@ -406,6 +428,18 @@ drake.on("drop", handleDragUpdate);
 Object.values(columns).forEach((listEl) => {
   listEl.addEventListener("click", (event) => {
     if (isReadOnly) {
+      return;
+    }
+    const actionButton = event.target.closest(".create-action-btn");
+    if (actionButton && !actionButton.disabled) {
+      const cardEl = actionButton.closest(".card");
+      if (!cardEl) {
+        return;
+      }
+      sendMessage({
+        type: "createAction",
+        cardId: cardEl.dataset.id
+      });
       return;
     }
     const button = event.target.closest(".vote-btn");
