@@ -289,12 +289,12 @@ document.addEventListener("click", ensureAudioContext, { once: true });
 function applyReadOnlyState() {
   document.body.classList.toggle("read-only", isReadOnly);
   if (timerControls) {
-    timerControls.style.display = isFacilitator && !isReadOnly ? "flex" : "none";
+    timerControls.hidden = !isFacilitator || isReadOnly;
   }
 }
 
 if (timerControls) {
-  timerControls.style.display = "none";
+  timerControls.hidden = true;
 }
 
 const drake = dragula([columns.well, columns.improve, columns.action], {

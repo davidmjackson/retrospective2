@@ -820,11 +820,28 @@ textarea {
   margin-bottom: 0;
 }
 
-.timer-display {
-  font-size: 1.45rem;
+.timer-readout {
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid #dcd2ff;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #f7f3ff, #ffffff);
+}
+
+.timer-readout span {
+  color: var(--primary);
+  font-size: 0.75rem;
   font-weight: 800;
+  text-transform: uppercase;
+}
+
+.timer-display {
+  font-size: 2.45rem;
+  font-weight: 900;
   color: var(--ink);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .timer-controls {
