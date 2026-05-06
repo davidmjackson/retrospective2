@@ -1425,8 +1425,17 @@ textarea {
   }
 
   #card-form,
-  .timer-actions {
+  .timer-controls {
     grid-template-columns: 1fr;
+  }
+
+  .timer-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .timer-actions button {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 
   .tips-bar {

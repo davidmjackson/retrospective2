@@ -1,0 +1,106 @@
+const { test, expect } = require("@playwright/test");
+
+async function login(page, { name, role, team, key = "", createTeam = false }) {
+  await page.goto("/");
+  await page.locator("#login-name").fill(name);
+  await page.locator("#login-role").selectOption(role);
+  if (role !== "admin") {
+    await page.locator("#login-team").fill(team);
+  }
+  if (createTeam) {
+    await page.locator("#login-create-team").check();
+  } else {
+    await page.locator("#login-key").fill(key);
+  }
+  await page.getByRole("button", { name: "Enter Lobby" }).click();
+}
+
+test("login page exposes the redesigned sign-in shell", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator(".login-shell")).toBeVisible();
+  await expect(page.locator(".login-hero")).toContainText("Run focused retros");
+  await expect(page.locator(".login-preview")).toBeVisible();
+  await expect(page.locator(".auth-card")).toContainText("Welcome Back");
+  await expect(page.getByRole("button", { name: "Enter Lobby" })).toBeVisible();
+});
+
+test("lobby and actions pages use the redesigned dashboard shell", async ({ page }) => {
+  const suffix = Date.now().toString(36);
+  const team = `Shell Team ${suffix}`;
+  const retroTitle = `Shell Retro ${suffix}`;
+
+  await login(page, {
+    name: "Shell Facilitator",
+    role: "facilitator",
+    team,
+    createTeam: true
+  });
+  await expect(page).toHaveURL(/\/lobby$/);
+  await expect(page.locator(".overview-grid")).toBeVisible();
+  await expect(page.locator("#team-key-panel")).toBeVisible();
+
+  await page.locator("#create-title").fill(retroTitle);
+  await page.getByRole("button", { name: "Create Retro" }).click();
+  await expect(page).toHaveURL(/\/retrospective\?id=/);
+  await expect(page.locator("#status")).toHaveText("Live");
+  await page.locator("#card-column").selectOption("action");
+  await page.locator("#card-text").fill("Confirm action board styling");
+  await page.getByRole("button", { name: "Add note" }).click();
+  await expect(page.locator("#col-action .card")).toContainText(
+    "Confirm action board styling"
+  );
+
+  await page.goto("/actions");
+  await expect(page.locator(".actions-summary")).toBeVisible();
+  await expect(page.locator(".actions-board")).toBeVisible();
+  await expect(page.locator(".kanban-column")).toHaveCount(4);
+  await expect(page.locator(".action-card")).toContainText(
+    "Confirm action board styling"
+  );
+
+  await page.goto("/lobby");
+  await expect(page.locator(".retro-item").filter({ hasText: retroTitle })).toBeVisible();
+});
+
+test("admin page renders the team-key management shell", async ({ page }) => {
+  await login(page, {
+    name: "Admin",
+    role: "admin",
+    team: "Admin",
+    key: "admn1"
+  });
+
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.locator(".admin-summary")).toBeVisible();
+  await expect(page.locator(".team-table")).toBeVisible();
+  await expect(page.locator("#team-count")).toContainText("teams");
+  await expect(page.locator("#team-table-body")).toContainText("Admin");
+});
+
+test("mobile retrospective timer controls remain compact", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  const suffix = Date.now().toString(36);
+  const team = `Mobile Shell ${suffix}`;
+
+  await login(page, {
+    name: "Mobile Facilitator",
+    role: "facilitator",
+    team,
+    createTeam: true
+  });
+  await expect(page).toHaveURL(/\/lobby$/);
+  await page.locator("#create-title").fill(`Mobile Shell Retro ${suffix}`);
+  await page.getByRole("button", { name: "Create Retro" }).click();
+  await expect(page).toHaveURL(/\/retrospective\?id=/);
+  await expect(page.locator("#status")).toHaveText("Live");
+
+  const timerControls = page.locator(".timer-controls");
+  await expect(timerControls).toBeVisible();
+  const timerControlsBox = await timerControls.boundingBox();
+  expect(timerControlsBox.width).toBeLessThanOrEqual(360);
+  await expect(page.locator(".timer-actions")).toHaveCSS(
+    "grid-template-columns",
+    /.+ .+ .+/
+  );
+});
