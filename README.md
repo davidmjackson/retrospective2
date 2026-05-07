@@ -62,6 +62,10 @@ Tune with `RETRO_LOGIN_RATE_LIMIT_MAX` and `RETRO_LOGIN_RATE_LIMIT_WINDOW_MS`.
 - Apply retention cleanup: `RETRO_RETENTION_DAYS=30 npm run db:retention`
 - Vacuum database: `npm run db:vacuum`
 
+## Session Log
+- Review `docs/session-log.md` at the start of each session for recent decisions,
+  verification, and next-step options.
+
 ## TODOs
 - Decide whether `state.json` should be committed or replaced with a seed file.
 - Remove or consolidate duplicate board markup (`public/index.html` vs `public/retrospective.html`).
