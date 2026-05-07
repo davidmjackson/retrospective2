@@ -6,6 +6,28 @@ what changed, what was verified, decisions made, and the next useful options.
 ## 2026-05-07
 
 ### Changed
+- Added save feedback to editable Actions Report cards.
+- Save button now shows `Saving...`, then `Saved` or `Save failed`.
+- Added browser coverage for the successful save message.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- Actions Report edits should give immediate visible confirmation after save.
+
+### Next
+- Visually review the save feedback in the running app.
+- Consider adding timed fade-out or dirty-state indicators later.
+
+## 2026-05-07 Editable Action Report
+
+### Changed
 - Created `feature/edit-action-report-details`.
 - Made Actions Report cards editable for:
   - owner

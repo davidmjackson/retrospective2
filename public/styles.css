@@ -1396,6 +1396,28 @@ textarea {
   text-transform: none;
 }
 
+.action-save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.save-status {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.save-status.is-success {
+  color: var(--green);
+}
+
+.save-status.is-error {
+  color: var(--red);
+}
+
 .action-notes textarea {
   min-height: 58px;
   text-transform: none;

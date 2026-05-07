@@ -91,6 +91,7 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
     .fill("2026-05-22");
   await page.locator(".action-card textarea").fill("Updated report notes.");
   await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".save-status")).toHaveText("Saved");
   await page.reload();
   await expect(page.locator(".action-field").filter({ hasText: "Owner" }).locator("input"))
     .toHaveValue("Updated Lead");

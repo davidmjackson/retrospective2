@@ -108,8 +108,15 @@ function createActionCard(action) {
   saveBtn.type = "button";
   saveBtn.className = "secondary-btn";
   saveBtn.textContent = "Save changes";
+  const saveStatus = document.createElement("span");
+  saveStatus.className = "save-status";
+  saveStatus.setAttribute("role", "status");
+  saveStatus.setAttribute("aria-live", "polite");
   saveBtn.addEventListener("click", async () => {
-    await updateAction({
+    saveBtn.disabled = true;
+    saveStatus.classList.remove("is-error", "is-success");
+    saveStatus.textContent = "Saving...";
+    const didSave = await updateAction({
       retroId: action.retroId,
       actionId: action.actionId,
       status: card.dataset.status,
@@ -117,8 +124,16 @@ function createActionCard(action) {
       owner: ownerInput.value,
       dueDate: dueInput.value
     });
+    saveBtn.disabled = false;
+    saveStatus.classList.toggle("is-success", didSave);
+    saveStatus.classList.toggle("is-error", !didSave);
+    saveStatus.textContent = didSave ? "Saved" : "Save failed";
   });
-  card.appendChild(saveBtn);
+  const saveRow = document.createElement("div");
+  saveRow.className = "action-save-row";
+  saveRow.appendChild(saveBtn);
+  saveRow.appendChild(saveStatus);
+  card.appendChild(saveRow);
 
   return card;
 }
@@ -130,8 +145,9 @@ async function updateAction(action) {
     body: JSON.stringify(action)
   });
   if (!response) {
-    return;
+    return false;
   }
+  return response.ok;
 }
 
 function renderBoard(actions) {
