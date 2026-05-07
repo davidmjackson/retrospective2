@@ -58,6 +58,7 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
     .locator("#col-continue .card")
     .filter({ hasText: "Confirm action board styling" });
   await expect(continueCard).toContainText("Confirm action board styling");
+  await expect(continueCard.locator(".avatar")).toHaveText("SF");
   await expect(page.locator(".retro-health")).toContainText("Retro Health");
   await expect(page.locator("#stat-notes")).toHaveText("1");
   await expect(page.locator("#stat-actions")).toHaveText("0");

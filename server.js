@@ -492,7 +492,8 @@ function addCardToRetro(retro, data, auth) {
     id: createCardId(),
     text: text.value,
     details: details.value,
-    votes: 0
+    votes: 0,
+    createdBy: auth.name || "Anonymous"
   };
   retro.columns[column.value].push(card);
   setLastAction(retro, auth.name, "added a card");

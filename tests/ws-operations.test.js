@@ -359,6 +359,10 @@ async function main() {
     );
     const cardId = afterAdd.retro.columns.well[0].id;
     assert(cardId, "Server did not assign a card id.");
+    assert(
+      afterAdd.retro.columns.well[0].createdBy === "Participant",
+      "Card creator was not assigned."
+    );
 
     socket.send(JSON.stringify({ type: "voteCard", cardId }));
     socket.send(JSON.stringify({ type: "voteCard", cardId }));
@@ -560,13 +564,17 @@ async function main() {
     try {
       const persistedCard = persistedDb
         .prepare(
-          "SELECT column_type, votes, status, notes FROM cards WHERE id = ? AND retro_id = ?"
+          "SELECT column_type, votes, status, notes, created_by FROM cards WHERE id = ? AND retro_id = ?"
         )
         .get(cardId, retroId);
       assert(persistedCard, "Card operation was not persisted to SQLite.");
       assert(persistedCard.column_type === "continue", "Persisted card column is wrong.");
       assert(persistedCard.votes === 2, "Persisted card vote count is wrong.");
       assert(persistedCard.status === null, "Persisted continue card has action status.");
+      assert(
+        persistedCard.created_by === "Participant",
+        "Persisted card creator is wrong."
+      );
 
       const persistedAction = persistedDb
         .prepare(

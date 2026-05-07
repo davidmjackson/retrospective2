@@ -109,7 +109,7 @@ function getInitials(value) {
 }
 
 function getCardInitials(card) {
-  return getInitials(card.author || card.createdBy || card.owner || card.text);
+  return getInitials(card.author || card.createdBy || card.owner || "Anonymous");
 }
 
 function getRetroStats(state) {

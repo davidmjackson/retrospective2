@@ -248,6 +248,7 @@ function createNormalizedSchema(db, tables) {
     votes INTEGER NOT NULL,
     status TEXT,
     notes TEXT,
+    created_by TEXT,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (retro_id) REFERENCES ${tableNames.retros}(id) ON DELETE CASCADE
   )`);
@@ -280,6 +281,17 @@ function createNormalizedSchema(db, tables) {
   );
 }
 
+function tableHasColumn(db, tableName, columnName) {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+  return columns.some((column) => column.name === columnName);
+}
+
+function ensureCardCreatedByColumn(db, tableName = "cards") {
+  if (!tableHasColumn(db, tableName, "created_by")) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN created_by TEXT`);
+  }
+}
+
 function collectCards(retro) {
   const cards = [];
   ["well", "improve", "continue"].forEach((column) => {
@@ -291,7 +303,8 @@ function collectCards(retro) {
         details: card.details || "",
         votes: Number.isFinite(card.votes) ? card.votes : 0,
         status: null,
-        notes: null
+        notes: null,
+        createdBy: card.createdBy || card.created_by || ""
       });
     });
   });
@@ -359,7 +372,8 @@ function normalizeCardForPersistence(card, columnType) {
     details: card.details || "",
     votes: Number.isFinite(card.votes) ? card.votes : 0,
     status: null,
-    notes: null
+    notes: null,
+    createdBy: card.createdBy || card.created_by || ""
   };
 }
 
@@ -375,8 +389,9 @@ function runCardUpsert(db, tableName, retroId, columnType, card, timestamp) {
       votes,
       status,
       notes,
+      created_by,
       updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       retro_id = excluded.retro_id,
       column_type = excluded.column_type,
@@ -385,6 +400,7 @@ function runCardUpsert(db, tableName, retroId, columnType, card, timestamp) {
       votes = excluded.votes,
       status = excluded.status,
       notes = excluded.notes,
+      created_by = excluded.created_by,
       updated_at = excluded.updated_at`
   );
 
@@ -397,6 +413,7 @@ function runCardUpsert(db, tableName, retroId, columnType, card, timestamp) {
     normalized.votes,
     normalized.status,
     normalized.notes,
+    normalized.createdBy,
     timestamp
   );
 }
@@ -537,8 +554,9 @@ function saveRetros(db, retros, callback, options = {}) {
         votes,
         status,
         notes,
+        created_by,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const actionStmt = db.prepare(
       `INSERT INTO ${tables.actions} (
@@ -577,6 +595,7 @@ function saveRetros(db, retros, callback, options = {}) {
             card.votes,
             card.status,
             card.notes,
+            card.createdBy,
             timestamp
           );
         });
@@ -671,11 +690,12 @@ function ensureSchema(db, callback) {
     const version = row ? Number.parseInt(row.value, 10) : 0;
     if (version >= 2) {
       createNormalizedSchema(db, { retros: "retros", cards: "cards" });
+      ensureCardCreatedByColumn(db);
       createTeamsSchema(db);
       backfillTeamsFromRetros(db);
-      if (version < 4) {
+      if (version < 5) {
         db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
         );
       }
       callback();
@@ -694,17 +714,18 @@ function ensureSchema(db, callback) {
         createTeamsSchema(db);
         backfillTeamsFromRetros(db);
         db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
         );
         callback();
       });
       return;
     }
     createNormalizedSchema(db, { retros: "retros", cards: "cards" });
+    ensureCardCreatedByColumn(db);
     createTeamsSchema(db);
     backfillTeamsFromRetros(db);
     db.exec(
-      "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')"
+      "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
     );
     callback();
   } catch (err) {
@@ -748,7 +769,8 @@ function loadRetros(db, callback) {
           id: card.id,
           text: card.text,
           details: card.details || "",
-          votes: Number.isFinite(card.votes) ? card.votes : 0
+          votes: Number.isFinite(card.votes) ? card.votes : 0,
+          createdBy: card.created_by || ""
         };
         columns[columnType].push(mapped);
       });

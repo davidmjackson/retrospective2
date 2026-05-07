@@ -3,6 +3,30 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-07 Card Creator Initials
+
+### Changed
+- Created `feature/card-creator-initials`.
+- Cards now store the name of the person who created them.
+- Card avatars now use creator initials instead of falling back to card title initials.
+- Added a SQLite migration for `cards.created_by`.
+- Added integration and browser checks for card creator initials and persistence.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- Fresh DB migrate/vacuum check with a temporary SQLite database
+- Schema version `4` to `5` migration check for `cards.created_by`
+
+### Decisions
+- Existing cards without creator metadata will show anonymous initials rather than title initials.
+
+### Next
+- Commit, push, merge to `main`, and deploy the fix to production.
+
 ## 2026-05-07 Proprietary Licence
 
 ### Changed
