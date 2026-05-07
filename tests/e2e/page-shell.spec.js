@@ -1,17 +1,32 @@
 const { test, expect } = require("@playwright/test");
 
-async function login(page, { name, role, team, key = "", createTeam = false }) {
+async function createTeamViaAdmin(page, team) {
+  const adminLogin = await page.request.post("/api/login", {
+    data: {
+      name: "E2E Admin",
+      role: "admin",
+      team: "Admin",
+      key: "admn1"
+    }
+  });
+  expect(adminLogin.ok()).toBeTruthy();
+  const teamCreate = await page.request.post("/api/teams", {
+    data: { team }
+  });
+  expect(teamCreate.status()).toBe(201);
+  const data = await teamCreate.json();
+  await page.request.post("/api/logout");
+  return data.teamKey;
+}
+
+async function login(page, { name, role, team, key = "" }) {
   await page.goto("/");
   await page.locator("#login-name").fill(name);
   await page.locator("#login-role").selectOption(role);
   if (role !== "admin") {
     await page.locator("#login-team").fill(team);
   }
-  if (createTeam) {
-    await page.locator("#login-create-team").check();
-  } else {
-    await page.locator("#login-key").fill(key);
-  }
+  await page.locator("#login-key").fill(key);
   await page.getByRole("button", { name: "Enter Lobby" }).click();
 }
 
@@ -23,6 +38,7 @@ test("login page exposes the redesigned sign-in shell", async ({ page }) => {
   await expect(page.locator(".login-preview")).toBeVisible();
   await expect(page.locator(".auth-card")).toContainText("Welcome Back");
   await expect(page.getByRole("button", { name: "Enter Lobby" })).toBeVisible();
+  await expect(page.locator("#login-create-team")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Licence" })).toHaveAttribute(
     "href",
     "/license"
@@ -36,16 +52,26 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   const suffix = Date.now().toString(36);
   const team = `Shell Team ${suffix}`;
   const retroTitle = `Shell Retro ${suffix}`;
+  const teamKey = await createTeamViaAdmin(page, team);
 
   await login(page, {
     name: "Shell Facilitator",
     role: "facilitator",
     team,
-    createTeam: true
+    key: teamKey
   });
   await expect(page).toHaveURL(/\/lobby$/);
   await expect(page.locator(".overview-grid")).toBeVisible();
+  await expect(page.locator("#create-team-panel")).toBeVisible();
+
+  const createdTeamName = `Shell Extra Team ${suffix}`;
+  await page.locator("#new-team-name").fill(createdTeamName);
+  await page.getByRole("button", { name: "Create Team Key" }).click();
   await expect(page.locator("#team-key-panel")).toBeVisible();
+  await expect(page.locator("#team-key-team")).toHaveText(createdTeamName);
+  await expect(page.locator("#team-key-value")).toHaveText(/^[a-z0-9]{5}$/);
+  await page.locator("#team-key-dismiss").click();
+  await expect(page.locator("#team-key-panel")).toBeHidden();
 
   await page.locator("#create-title").fill(retroTitle);
   await page.getByRole("button", { name: "Create Retro" }).click();
@@ -130,12 +156,13 @@ test("mobile retrospective timer controls remain compact", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   const suffix = Date.now().toString(36);
   const team = `Mobile Shell ${suffix}`;
+  const teamKey = await createTeamViaAdmin(page, team);
 
   await login(page, {
     name: "Mobile Facilitator",
     role: "facilitator",
     team,
-    createTeam: true
+    key: teamKey
   });
   await expect(page).toHaveURL(/\/lobby$/);
   await page.locator("#create-title").fill(`Mobile Shell Retro ${suffix}`);

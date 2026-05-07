@@ -1,15 +1,30 @@
 const { test, expect } = require("@playwright/test");
 
-async function login(page, { name, role, team, key = "", createTeam = false }) {
+async function createTeamViaAdmin(page, team) {
+  const adminLogin = await page.request.post("/api/login", {
+    data: {
+      name: "E2E Admin",
+      role: "admin",
+      team: "Admin",
+      key: "admn1"
+    }
+  });
+  expect(adminLogin.ok()).toBeTruthy();
+  const teamCreate = await page.request.post("/api/teams", {
+    data: { team }
+  });
+  expect(teamCreate.status()).toBe(201);
+  const data = await teamCreate.json();
+  await page.request.post("/api/logout");
+  return data.teamKey;
+}
+
+async function login(page, { name, role, team, key = "" }) {
   await page.goto("/");
   await page.locator("#login-name").fill(name);
   await page.locator("#login-role").selectOption(role);
   await page.locator("#login-team").fill(team);
-  if (createTeam) {
-    await page.locator("#login-create-team").check();
-  } else {
-    await page.locator("#login-key").fill(key);
-  }
+  await page.locator("#login-key").fill(key);
   await page.getByRole("button", { name: "Enter Lobby" }).click();
   await expect(page).toHaveURL(role === "admin" ? /\/admin$/ : /\/lobby$/);
 }
@@ -24,17 +39,16 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
   const participant = await participantContext.newPage();
 
   try {
+    const teamKey = await createTeamViaAdmin(facilitator, team);
     await login(facilitator, {
       name: "Facilitator",
       role: "facilitator",
       team,
-      createTeam: true
+      key: teamKey
     });
 
     await expect(facilitator.locator("#user-summary")).toContainText("facilitator");
-    await expect(facilitator.locator("#team-key-panel")).toBeVisible();
-    const teamKey = (await facilitator.locator("#team-key-value").textContent()).trim();
-    expect(teamKey).toMatch(/^[a-z0-9]{5}$/);
+    await expect(facilitator.locator("#create-team-panel")).toBeVisible();
 
     await facilitator.locator("#create-title").fill(retroTitle);
     await facilitator.getByRole("button", { name: "Create Retro" }).click();

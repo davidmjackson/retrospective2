@@ -5,6 +5,10 @@ const createPanel = document.getElementById("create-panel");
 const createForm = document.getElementById("create-form");
 const createTitle = document.getElementById("create-title");
 const createTeam = document.getElementById("create-team");
+const createTeamPanel = document.getElementById("create-team-panel");
+const createTeamForm = document.getElementById("create-team-form");
+const newTeamName = document.getElementById("new-team-name");
+const createTeamError = document.getElementById("create-team-error");
 const logoutBtn = document.getElementById("logout-btn");
 const teamKeyPanel = document.getElementById("team-key-panel");
 const teamKeyValue = document.getElementById("team-key-value");
@@ -149,8 +153,7 @@ function showTeamKey() {
   if (
     userRole === "facilitator" &&
     storedKey &&
-    storedTeam &&
-    storedTeam.toLowerCase() === userTeam.toLowerCase()
+    storedTeam
   ) {
     teamKeyPanel.hidden = false;
     teamKeyValue.textContent = storedKey;
@@ -158,6 +161,40 @@ function showTeamKey() {
   } else {
     teamKeyPanel.hidden = true;
   }
+}
+
+if (createTeamForm) {
+  createTeamForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (createTeamError) {
+      createTeamError.textContent = "";
+    }
+    const team = newTeamName ? newTeamName.value.trim() : "";
+    if (!team) {
+      return;
+    }
+    const response = await fetchWithAuth("/api/teams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ team })
+    });
+    if (!response) {
+      return;
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (createTeamError) {
+        createTeamError.textContent = data.error || "Unable to create team.";
+      }
+      return;
+    }
+    localStorage.setItem("retroTeamKey", data.teamKey);
+    localStorage.setItem("retroTeamKeyTeam", data.team);
+    if (newTeamName) {
+      newTeamName.value = "";
+    }
+    showTeamKey();
+  });
 }
 
 if (teamKeyCopy) {
@@ -249,7 +286,13 @@ async function init() {
   }
   if (userRole !== "facilitator") {
     createPanel.style.display = "none";
+    if (createTeamPanel) {
+      createTeamPanel.hidden = true;
+    }
   } else if (userTeam) {
+    if (createTeamPanel) {
+      createTeamPanel.hidden = false;
+    }
     createTeam.value = userTeam;
     createTeam.disabled = true;
   }

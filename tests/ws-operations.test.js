@@ -229,6 +229,52 @@ async function main() {
       "Licence page does not name the developer."
     );
 
+    const publicTeamCreate = await request(
+      baseUrl,
+      "/api/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Public Facilitator",
+          role: "facilitator",
+          team: "Public Created Team",
+          createTeam: true
+        })
+      }
+    );
+    assert(
+      publicTeamCreate.status === 403,
+      "Public facilitator login was allowed to create a team."
+    );
+
+    const adminLogin = await request(
+      baseUrl,
+      "/api/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Admin User",
+          role: "admin",
+          team: "Admin",
+          key: "abc12"
+        })
+      }
+    );
+    assert(adminLogin.status === 200, "Admin login failed.");
+    assert(adminLogin.cookie, "Admin cookie was not set.");
+
+    const operationsTeam = await request(
+      baseUrl,
+      "/api/teams",
+      {
+        method: "POST",
+        body: JSON.stringify({ team: "Operations Team" })
+      },
+      adminLogin.cookie
+    );
+    assert(operationsTeam.status === 201, "Admin could not create team.");
+    assert(operationsTeam.body.teamKey, "Created team key was not returned.");
+
     const facilitatorLogin = await request(
       baseUrl,
       "/api/login",
@@ -238,13 +284,26 @@ async function main() {
           name: "Facilitator",
           role: "facilitator",
           team: "Operations Team",
-          createTeam: true
+          key: operationsTeam.body.teamKey
         })
       }
     );
     assert(facilitatorLogin.status === 200, "Facilitator login failed.");
     assert(facilitatorLogin.cookie, "Facilitator cookie was not set.");
-    assert(facilitatorLogin.body.teamKey, "Team key was not returned.");
+
+    const participantTeamCreate = await request(
+      baseUrl,
+      "/api/teams",
+      {
+        method: "POST",
+        body: JSON.stringify({ team: "Participant Created Team" })
+      },
+      ""
+    );
+    assert(
+      participantTeamCreate.status === 401,
+      "Unauthenticated team creation did not fail."
+    );
 
     const retroCreate = await request(
       baseUrl,
@@ -267,12 +326,26 @@ async function main() {
           name: "Participant",
           role: "participant",
           team: "Operations Team",
-          key: facilitatorLogin.body.teamKey
+          key: operationsTeam.body.teamKey
         })
       }
     );
     assert(participantLogin.status === 200, "Participant login failed.");
     assert(participantLogin.cookie, "Participant cookie was not set.");
+
+    const participantCreateTeam = await request(
+      baseUrl,
+      "/api/teams",
+      {
+        method: "POST",
+        body: JSON.stringify({ team: "Participant Created Team" })
+      },
+      participantLogin.cookie
+    );
+    assert(
+      participantCreateTeam.status === 403,
+      "Participant was allowed to create a team."
+    );
 
     const participantRetros = await request(
       baseUrl,
@@ -286,6 +359,17 @@ async function main() {
       "Participant could not see team retro."
     );
 
+    const otherTeamCreate = await request(
+      baseUrl,
+      "/api/teams",
+      {
+        method: "POST",
+        body: JSON.stringify({ team: "Other Team" })
+      },
+      facilitatorLogin.cookie
+    );
+    assert(otherTeamCreate.status === 201, "Facilitator could not create another team.");
+
     const otherTeamLogin = await request(
       baseUrl,
       "/api/login",
@@ -295,7 +379,7 @@ async function main() {
           name: "Other Facilitator",
           role: "facilitator",
           team: "Other Team",
-          createTeam: true
+          key: otherTeamCreate.body.teamKey
         })
       }
     );

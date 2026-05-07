@@ -1007,36 +1007,16 @@ app.post("/api/login", (req, res) => {
     }
   } else {
     if (wantsCreate) {
-      if (safeTeam.toLowerCase() === "admin") {
-        rejectLogin(res, rateLimitKey, 403, "Admin team is restricted.");
-        return;
-      }
-      if (teamRecord) {
-        rejectLogin(res, rateLimitKey, 409, "Team already exists.");
-        return;
-      }
-      try {
-        const created = createTeam(db, safeTeam);
-        teamRecord = { name: created.name, join_key: created.joinKey };
-        createdKey = created.joinKey;
-        createdTeam = true;
-      } catch (err) {
-        if (err && err.code === "TEAM_EXISTS") {
-          rejectLogin(res, rateLimitKey, 409, "Team already exists.");
-          return;
-        }
-        rejectLogin(res, rateLimitKey, 500, "Unable to create team.");
-        return;
-      }
-    } else {
-      if (!teamRecord) {
-        rejectLogin(res, rateLimitKey, 404, "Team not found.");
-        return;
-      }
-      if (!safeKey || safeKey !== teamRecord.join_key) {
-        rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
-        return;
-      }
+      rejectLogin(res, rateLimitKey, 403, "Team creation requires a signed-in facilitator.");
+      return;
+    }
+    if (!teamRecord) {
+      rejectLogin(res, rateLimitKey, 404, "Team not found.");
+      return;
+    }
+    if (!safeKey || safeKey !== teamRecord.join_key) {
+      rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
+      return;
     }
   }
 
@@ -1100,6 +1080,46 @@ app.get("/api/admin/teams", (req, res) => {
   }
   const teams = listTeams(db);
   res.json({ teams });
+});
+
+app.post("/api/teams", (req, res) => {
+  const auth = requireAuth(req, res);
+  if (!auth) {
+    return;
+  }
+  if (!["admin", "facilitator"].includes(auth.role)) {
+    res.status(403).json({ error: "Facilitator role required." });
+    return;
+  }
+  const validatedTeam = validateText(req.body?.team, "Team", maxTeamLength, {
+    required: true
+  });
+  if (validatedTeam.error) {
+    res.status(400).json({ error: validatedTeam.error });
+    return;
+  }
+  const safeTeam = validatedTeam.value;
+  if (safeTeam.toLowerCase() === "admin") {
+    res.status(403).json({ error: "Admin team is restricted." });
+    return;
+  }
+  if (getTeamByName(db, safeTeam)) {
+    res.status(409).json({ error: "Team already exists." });
+    return;
+  }
+  try {
+    const created = createTeam(db, safeTeam);
+    res.status(201).json({
+      team: created.name,
+      teamKey: created.joinKey
+    });
+  } catch (err) {
+    if (err && err.code === "TEAM_EXISTS") {
+      res.status(409).json({ error: "Team already exists." });
+      return;
+    }
+    res.status(500).json({ error: "Unable to create team." });
+  }
 });
 
 app.delete("/api/admin/teams/:id", (req, res) => {

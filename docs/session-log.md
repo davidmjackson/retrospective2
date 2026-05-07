@@ -3,6 +3,31 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-07 Restricted Team Creation
+
+### Changed
+- Created `feature/restrict-team-creation`.
+- Removed public team-key generation from the login page.
+- Public facilitator login can no longer create teams.
+- Added authenticated `/api/teams` team creation for facilitators and admins.
+- Added a facilitator-only lobby panel for creating new team keys.
+- Updated integration and browser tests to cover the restricted team creation flow.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- Team keys must only be generated after authentication.
+- Admin can create teams for bootstrap and operations; facilitators can create teams from the lobby.
+
+### Next
+- Commit, push, merge to `main`, and deploy urgently to production.
+
 ## 2026-05-07 Timer Complete Sound
 
 ### Changed

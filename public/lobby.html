@@ -57,6 +57,23 @@
           </div>
         </div>
       </section>
+
+      <section class="panel create-team-panel" id="create-team-panel" hidden>
+        <h2>Create New Team</h2>
+        <p class="panel-copy">
+          Generate a team key for a new group. Share the key with that team so
+          they can sign in.
+        </p>
+        <form id="create-team-form" class="form-grid">
+          <label class="field">
+            <span>Team Name</span>
+            <input id="new-team-name" type="text" placeholder="Team name" required />
+          </label>
+          <p id="create-team-error" class="error-text" role="alert"></p>
+          <button type="submit" class="primary-btn">Create Team Key</button>
+        </form>
+      </section>
+
       <section class="panel retro-panel">
         <div class="panel-header">
           <h2>Past Retrospectives</h2>

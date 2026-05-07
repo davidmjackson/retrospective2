@@ -3,8 +3,6 @@ const nameInput = document.getElementById("login-name");
 const roleInput = document.getElementById("login-role");
 const teamInput = document.getElementById("login-team");
 const keyInput = document.getElementById("login-key");
-const createTeamToggle = document.getElementById("login-create-team");
-const createTeamField = document.getElementById("create-team-field");
 const keyField = document.getElementById("login-key-field");
 const errorText = document.getElementById("login-error");
 
@@ -34,14 +32,10 @@ loginForm.addEventListener("submit", (event) => {
     return;
   }
   const key = keyInput ? keyInput.value.trim().toLowerCase() : "";
-  const createTeam = Boolean(createTeamToggle && createTeamToggle.checked);
-  login(name, roleInput.value, team, key, createTeam);
+  login(name, roleInput.value, team, key);
 });
 
 roleInput.addEventListener("change", updateRoleUI);
-if (createTeamToggle) {
-  createTeamToggle.addEventListener("change", updateRoleUI);
-}
 if (keyInput) {
   keyInput.addEventListener("input", () => {
     keyInput.value = keyInput.value.toLowerCase();
@@ -49,24 +43,12 @@ if (keyInput) {
 }
 
 function updateRoleUI() {
-  const isFacilitator = roleInput.value === "facilitator";
   const isAdmin = roleInput.value === "admin";
-  if (createTeamField) {
-    createTeamField.style.display = isFacilitator ? "block" : "none";
-  }
-  if ((!isFacilitator || isAdmin) && createTeamToggle) {
-    createTeamToggle.checked = false;
-  }
-  const needsKey =
-    isAdmin || !isFacilitator || !createTeamToggle || !createTeamToggle.checked;
   if (keyField) {
-    keyField.style.display = needsKey ? "block" : "none";
+    keyField.style.display = "block";
   }
   if (keyInput) {
-    keyInput.required = needsKey;
-    if (!needsKey) {
-      keyInput.value = "";
-    }
+    keyInput.required = true;
   }
   if (isAdmin) {
     teamInput.value = "Admin";
@@ -91,11 +73,11 @@ async function checkSession() {
   window.location.href = "/lobby";
 }
 
-async function login(name, role, team, key, createTeam) {
+async function login(name, role, team, key) {
   const response = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, role, team, key, createTeam })
+    body: JSON.stringify({ name, role, team, key })
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
