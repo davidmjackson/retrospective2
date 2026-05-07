@@ -186,6 +186,8 @@ const maxRetroTitleLength = 140;
 const maxCardTextLength = 500;
 const maxCardDetailsLength = 2000;
 const maxActionNotesLength = 4000;
+const maxActionOwnerLength = 80;
+const maxActionDueDateLength = 10;
 const maxTimerMinutes = 240;
 const maxCardsPerColumn = 100;
 const loginRateLimitWindowMs = Number.parseInt(
@@ -398,6 +400,20 @@ function validateActionStatus(value) {
   return { value };
 }
 
+function validateDueDate(value) {
+  if (value === undefined || value === null || value === "") {
+    return { value: "" };
+  }
+  const date = validateText(value, "Due date", maxActionDueDateLength);
+  if (date.error) {
+    return date;
+  }
+  if (date.value && !/^\d{4}-\d{2}-\d{2}$/.test(date.value)) {
+    return { error: "Due date must use YYYY-MM-DD format." };
+  }
+  return date;
+}
+
 function validateTimerMinutes(value) {
   if (!Number.isFinite(value)) {
     return { error: "Timer minutes must be a number." };
@@ -564,16 +580,32 @@ function createActionFromCard(retro, data, auth) {
   if (existing) {
     return { value: { action: existing, created: false } };
   }
+  const title = validateText(data.title, "Action title", maxCardTextLength);
+  if (title.error) {
+    return title;
+  }
+  const owner = validateText(data.owner, "Action owner", maxActionOwnerLength);
+  if (owner.error) {
+    return owner;
+  }
+  const dueDate = validateDueDate(data.dueDate);
+  if (dueDate.error) {
+    return dueDate;
+  }
+  const notes = validateText(data.notes, "Action notes", maxActionNotesLength);
+  if (notes.error) {
+    return notes;
+  }
 
   const action = {
     id: createActionId(),
     sourceCardId: location.card.id,
-    text: location.card.text,
+    text: title.value || location.card.text,
     details: location.card.details || "",
-    owner: auth.name || "Anonymous",
-    dueDate: "",
+    owner: owner.value || auth.name || "Anonymous",
+    dueDate: dueDate.value,
     status: "todo",
-    notes: "",
+    notes: notes.value,
     createdAt: new Date().toISOString(),
     createdBy: auth.name || "Anonymous"
   };

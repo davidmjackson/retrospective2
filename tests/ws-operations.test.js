@@ -377,7 +377,16 @@ async function main() {
     assert(!continueCard.status, "Continue card should not have action status.");
     assert(continueCard.votes === 2, "Moved continue card lost votes.");
 
-    socket.send(JSON.stringify({ type: "createAction", cardId }));
+    socket.send(
+      JSON.stringify({
+        type: "createAction",
+        cardId,
+        title: "Confirm server action",
+        owner: "Release Owner",
+        dueDate: "2026-05-20",
+        notes: "Created from integration test"
+      })
+    );
     const afterActionCreate = await nextMessage(
       socket,
       (message) => message.type === "update" && message.retro.actions?.length === 1,
@@ -388,6 +397,18 @@ async function main() {
     assert(
       afterActionCreate.retro.actions[0].sourceCardId === cardId,
       "Action item is not linked to the source card."
+    );
+    assert(
+      afterActionCreate.retro.actions[0].text === "Confirm server action",
+      "Action title was not applied."
+    );
+    assert(
+      afterActionCreate.retro.actions[0].owner === "Release Owner",
+      "Action owner was not applied."
+    );
+    assert(
+      afterActionCreate.retro.actions[0].dueDate === "2026-05-20",
+      "Action due date was not applied."
     );
 
     facilitatorSocket = await openSocket(baseWsUrl, retroId, facilitatorLogin.cookie);
@@ -517,7 +538,7 @@ async function main() {
 
       const persistedAction = persistedDb
         .prepare(
-          "SELECT source_card_id, status, owner FROM actions WHERE id = ? AND retro_id = ?"
+          "SELECT source_card_id, text, status, owner, due_date, notes FROM actions WHERE id = ? AND retro_id = ?"
         )
         .get(actionId, retroId);
       assert(persistedAction, "Action item was not persisted to SQLite.");
@@ -526,7 +547,13 @@ async function main() {
         "Persisted action source card is wrong."
       );
       assert(persistedAction.status === "todo", "Persisted action status is wrong.");
-      assert(persistedAction.owner === "Participant", "Persisted action owner is wrong.");
+      assert(persistedAction.text === "Confirm server action", "Persisted action title is wrong.");
+      assert(persistedAction.owner === "Release Owner", "Persisted action owner is wrong.");
+      assert(persistedAction.due_date === "2026-05-20", "Persisted action due date is wrong.");
+      assert(
+        persistedAction.notes === "Created from integration test",
+        "Persisted action notes are wrong."
+      );
 
       const persistedRetro = persistedDb
         .prepare(

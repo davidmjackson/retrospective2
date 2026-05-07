@@ -53,6 +53,14 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(followUpCard).toBeVisible();
     await expect(facilitator.locator("#stat-actions")).toHaveText("0");
     await followUpCard.getByRole("button", { name: /Create action/ }).click();
+    await expect(facilitator.locator("#action-dialog")).toBeVisible();
+    await facilitator.locator("#action-owner").fill("Release Owner");
+    await facilitator.locator("#action-due-date").fill("2026-05-20");
+    await facilitator.locator("#action-notes").fill("Confirm owner and due date.");
+    await facilitator
+      .locator("#action-form")
+      .getByRole("button", { name: "Create action" })
+      .click();
     await expect(facilitator.locator("#stat-actions")).toHaveText("1");
 
     await facilitator.locator("#timer-minutes").fill("1");
@@ -91,6 +99,7 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(facilitator.locator(".action-card")).toContainText(
       "Follow up on release checklist"
     );
+    await expect(facilitator.locator(".action-card")).toContainText("Owner: Release Owner");
 
     await facilitator.goto("/lobby");
     const retroRow = facilitator.locator(".retro-item").filter({ hasText: retroTitle });

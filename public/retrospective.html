@@ -194,6 +194,41 @@
       <a href="/lobby">Need help?</a>
     </footer>
 
+    <dialog class="action-dialog" id="action-dialog">
+      <form id="action-form" method="dialog">
+        <header class="dialog-header">
+          <div>
+            <h2>Create action</h2>
+            <p>Turn this retro note into a committed follow-up.</p>
+          </div>
+          <button type="button" class="dialog-close" id="action-cancel" aria-label="Close">
+            ×
+          </button>
+        </header>
+        <input type="hidden" id="action-card-id" />
+        <label class="field">
+          <span>Action title</span>
+          <input id="action-title" type="text" maxlength="500" required />
+        </label>
+        <label class="field">
+          <span>Owner</span>
+          <input id="action-owner" type="text" maxlength="80" />
+        </label>
+        <label class="field">
+          <span>Due date</span>
+          <input id="action-due-date" type="date" />
+        </label>
+        <label class="field">
+          <span>Notes</span>
+          <textarea id="action-notes" rows="3" maxlength="4000"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-btn" id="action-dismiss">Cancel</button>
+          <button type="submit" class="primary-btn">Create action</button>
+        </div>
+      </form>
+    </dialog>
+
     <script src="vendor/dragula/dragula.min.js"></script>
     <script src="client.js"></script>
   </body>

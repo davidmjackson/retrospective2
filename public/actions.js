@@ -67,6 +67,13 @@ function createActionCard(action) {
   )}`;
   card.appendChild(meta);
 
+  if (action.dueDate) {
+    const due = document.createElement("p");
+    due.className = "action-due-date";
+    due.textContent = `Due ${formatDate(action.dueDate)}`;
+    card.appendChild(due);
+  }
+
   const notesLabel = document.createElement("label");
   notesLabel.className = "action-notes";
   const span = document.createElement("span");

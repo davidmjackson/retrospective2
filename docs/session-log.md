@@ -6,6 +6,36 @@ what changed, what was verified, decisions made, and the next useful options.
 ## 2026-05-07
 
 ### Changed
+- Created `feature/action-details-form`.
+- Replaced one-click action creation with a dialog that captures:
+  - action title
+  - owner
+  - due date
+  - notes
+- Added server-side validation for action owner and due date.
+- Displayed action due dates in the Actions Report.
+- Expanded integration and browser coverage for owner/due date action creation.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- Creating an action should remain deliberate, but now includes enough detail to be useful outside the retro.
+- Owner defaults to the current user and can be edited before creation.
+
+### Next
+- Review the modal and card layout visually in the running app.
+- Consider allowing action owner/due date edits from the Actions Report.
+- Merge `feature/action-details-form` after review.
+
+## 2026-05-07 Session Log Setup
+
+### Changed
 - Added this session log as the durable project diary.
 - Added a README pointer so future sessions start by checking this file.
 

@@ -13,6 +13,15 @@ const timerStart = document.getElementById("timer-start");
 const timerStop = document.getElementById("timer-stop");
 const timerReset = document.getElementById("timer-reset");
 const timerControls = document.querySelector(".timer-controls");
+const actionDialog = document.getElementById("action-dialog");
+const actionForm = document.getElementById("action-form");
+const actionCardIdInput = document.getElementById("action-card-id");
+const actionTitleInput = document.getElementById("action-title");
+const actionOwnerInput = document.getElementById("action-owner");
+const actionDueDateInput = document.getElementById("action-due-date");
+const actionNotesInput = document.getElementById("action-notes");
+const actionCancel = document.getElementById("action-cancel");
+const actionDismiss = document.getElementById("action-dismiss");
 const healthStats = {
   notes: document.getElementById("stat-notes"),
   votes: document.getElementById("stat-votes"),
@@ -280,6 +289,37 @@ function sendMessage(payload) {
   return true;
 }
 
+function closeActionDialog() {
+  if (actionDialog && actionDialog.open) {
+    actionDialog.close();
+  }
+}
+
+function openActionDialog(cardEl) {
+  if (
+    !actionDialog ||
+    !actionCardIdInput ||
+    !actionTitleInput ||
+    !actionOwnerInput ||
+    !actionDueDateInput ||
+    !actionNotesInput
+  ) {
+    return;
+  }
+  actionCardIdInput.value = cardEl.dataset.id || "";
+  actionTitleInput.value = cardEl.dataset.text || "";
+  actionOwnerInput.value = username || "";
+  actionDueDateInput.value = "";
+  actionNotesInput.value = cardEl.dataset.details || "";
+  if (typeof actionDialog.showModal === "function") {
+    actionDialog.showModal();
+  } else {
+    actionDialog.setAttribute("open", "");
+  }
+  actionTitleInput.focus();
+  actionTitleInput.select();
+}
+
 function getColumnKey(listEl) {
   return Object.keys(columns).find((key) => columns[key] === listEl) || "";
 }
@@ -436,10 +476,7 @@ Object.values(columns).forEach((listEl) => {
       if (!cardEl) {
         return;
       }
-      sendMessage({
-        type: "createAction",
-        cardId: cardEl.dataset.id
-      });
+      openActionDialog(cardEl);
       return;
     }
     const button = event.target.closest(".vote-btn");
@@ -456,6 +493,47 @@ Object.values(columns).forEach((listEl) => {
     });
   });
 });
+
+if (actionCancel) {
+  actionCancel.addEventListener("click", closeActionDialog);
+}
+
+if (actionDismiss) {
+  actionDismiss.addEventListener("click", closeActionDialog);
+}
+
+if (actionDialog) {
+  actionDialog.addEventListener("click", (event) => {
+    if (event.target === actionDialog) {
+      closeActionDialog();
+    }
+  });
+}
+
+if (actionForm) {
+  actionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (isReadOnly) {
+      return;
+    }
+    const title = actionTitleInput.value.trim();
+    if (!title) {
+      actionTitleInput.focus();
+      return;
+    }
+    const didSend = sendMessage({
+      type: "createAction",
+      cardId: actionCardIdInput.value,
+      title,
+      owner: actionOwnerInput.value.trim(),
+      dueDate: actionDueDateInput.value,
+      notes: actionNotesInput.value.trim()
+    });
+    if (didSend) {
+      closeActionDialog();
+    }
+  });
+}
 
 const form = document.getElementById("card-form");
 form.addEventListener("submit", (event) => {

@@ -56,6 +56,13 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator("#stat-actions")).toHaveText("0");
   await expect(page.locator("#health-continue")).toHaveText("1");
   await continueCard.getByRole("button", { name: /Create action/ }).click();
+  await expect(page.locator("#action-dialog")).toBeVisible();
+  await expect(page.locator("#action-title")).toHaveValue("Confirm action board styling");
+  await expect(page.locator("#action-owner")).toHaveValue("Shell Facilitator");
+  await page.locator("#action-owner").fill("Delivery Lead");
+  await page.locator("#action-due-date").fill("2026-05-15");
+  await page.locator("#action-notes").fill("Confirm with the team in planning.");
+  await page.locator("#action-form").getByRole("button", { name: "Create action" }).click();
   await expect(page.locator("#stat-actions")).toHaveText("1");
   await expect(
     continueCard.getByRole("button", { name: /Action already created/ })
@@ -74,6 +81,8 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator(".action-card")).toContainText(
     "Confirm action board styling"
   );
+  await expect(page.locator(".action-card")).toContainText("Owner: Delivery Lead");
+  await expect(page.locator(".action-due-date")).toContainText("Due");
 
   await page.goto("/lobby");
   await expect(page.locator(".retro-item").filter({ hasText: retroTitle })).toBeVisible();

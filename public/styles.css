@@ -1357,6 +1357,18 @@ textarea {
   font-size: 0.8rem;
 }
 
+.action-due-date {
+  width: fit-content;
+  margin: -2px 0 10px;
+  padding: 4px 8px;
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+  background: #edf7ff;
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .action-notes {
   display: grid;
   gap: 6px;
@@ -1370,6 +1382,65 @@ textarea {
 .action-notes textarea {
   min-height: 58px;
   text-transform: none;
+}
+
+.action-dialog {
+  width: min(520px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+
+.action-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.action-dialog form {
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.18rem;
+}
+
+.dialog-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.dialog-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 @media (max-width: 1080px) {
