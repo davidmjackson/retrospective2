@@ -918,6 +918,10 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+app.get("/license", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "license.html"));
+});
+
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",

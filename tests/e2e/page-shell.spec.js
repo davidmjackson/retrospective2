@@ -23,6 +23,13 @@ test("login page exposes the redesigned sign-in shell", async ({ page }) => {
   await expect(page.locator(".login-preview")).toBeVisible();
   await expect(page.locator(".auth-card")).toContainText("Welcome Back");
   await expect(page.getByRole("button", { name: "Enter Lobby" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Licence" })).toHaveAttribute(
+    "href",
+    "/license"
+  );
+  await page.getByRole("link", { name: "Licence" }).click();
+  await expect(page).toHaveURL(/\/license$/);
+  await expect(page.locator(".legal-panel")).toContainText("David Jackson");
 });
 
 test("lobby and actions pages use the redesigned dashboard shell", async ({ page }) => {

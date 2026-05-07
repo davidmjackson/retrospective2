@@ -3,6 +3,30 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-07 Proprietary Licence
+
+### Changed
+- Created `feature/proprietary-licence`.
+- Added a proprietary free-use `LICENSE` naming David Jackson as developer and owner.
+- Added a public licence page at `/license`.
+- Added a Licence link to the login page footer.
+- Added integration and browser checks for the licence page/link.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- The app is free to use through an authorised hosted instance.
+- The source code remains proprietary and is not open source.
+
+### Next
+- Review the licence wording with a legal professional if formal legal assurance is needed.
+
 ## 2026-05-07 Deployment Readiness
 
 ### Changed

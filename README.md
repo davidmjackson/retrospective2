@@ -26,6 +26,7 @@ Open `http://localhost:3001` (or the configured host/port).
 - `/retrospective` live board
 - `/actions` actions report
 - `/admin` admin dashboard
+- `/license` licence page
 - `/api/login` create session cookie
 - `/api/logout` clear session cookie
 - `/api/session` return active session

@@ -222,6 +222,13 @@ async function main() {
       "Health check uptime was not returned."
     );
 
+    const licensePage = await request(baseUrl, "/license");
+    assert(licensePage.status === 200, "Licence page did not load.");
+    assert(
+      licensePage.text.includes("David Jackson"),
+      "Licence page does not name the developer."
+    );
+
     const facilitatorLogin = await request(
       baseUrl,
       "/api/login",
