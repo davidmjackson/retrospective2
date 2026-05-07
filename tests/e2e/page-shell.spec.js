@@ -81,8 +81,22 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator(".action-card")).toContainText(
     "Confirm action board styling"
   );
-  await expect(page.locator(".action-card")).toContainText("Owner: Delivery Lead");
-  await expect(page.locator(".action-due-date")).toContainText("Due");
+  await expect(page.locator(".action-field").filter({ hasText: "Owner" }).locator("input"))
+    .toHaveValue("Delivery Lead");
+  await expect(page.locator(".action-field").filter({ hasText: "Due date" }).locator("input"))
+    .toHaveValue("2026-05-15");
+  await page.locator(".action-field").filter({ hasText: "Owner" }).locator("input")
+    .fill("Updated Lead");
+  await page.locator(".action-field").filter({ hasText: "Due date" }).locator("input")
+    .fill("2026-05-22");
+  await page.locator(".action-card textarea").fill("Updated report notes.");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.reload();
+  await expect(page.locator(".action-field").filter({ hasText: "Owner" }).locator("input"))
+    .toHaveValue("Updated Lead");
+  await expect(page.locator(".action-field").filter({ hasText: "Due date" }).locator("input"))
+    .toHaveValue("2026-05-22");
+  await expect(page.locator(".action-card textarea")).toHaveValue("Updated report notes.");
 
   await page.goto("/lobby");
   await expect(page.locator(".retro-item").filter({ hasText: retroTitle })).toBeVisible();

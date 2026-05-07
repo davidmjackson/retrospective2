@@ -1228,7 +1228,7 @@ app.put("/api/actions", (req, res) => {
   if (!auth) {
     return;
   }
-  const { retroId, actionId, status, notes } = req.body || {};
+  const { retroId, actionId, status, notes, owner, dueDate } = req.body || {};
   const validatedRetroId = validateId(retroId, "retroId");
   const validatedActionId = validateId(actionId, "actionId");
   if (validatedRetroId.error || validatedActionId.error) {
@@ -1255,6 +1255,24 @@ app.put("/api/actions", (req, res) => {
     }
     nextNotes = validatedNotes.value;
   }
+  let nextOwner;
+  if (owner !== undefined) {
+    const validatedOwner = validateText(owner, "Action owner", maxActionOwnerLength);
+    if (validatedOwner.error) {
+      res.status(400).json({ error: validatedOwner.error });
+      return;
+    }
+    nextOwner = validatedOwner.value;
+  }
+  let nextDueDate;
+  if (dueDate !== undefined) {
+    const validatedDueDate = validateDueDate(dueDate);
+    if (validatedDueDate.error) {
+      res.status(400).json({ error: validatedDueDate.error });
+      return;
+    }
+    nextDueDate = validatedDueDate.value;
+  }
   const retro = getRetro(validatedRetroId.value);
   if (!retro || (retro.team || "").toLowerCase() !== auth.normalizedTeam) {
     res.status(404).json({ error: "Retro not found." });
@@ -1272,6 +1290,12 @@ app.put("/api/actions", (req, res) => {
   }
   if (nextNotes !== undefined) {
     action.notes = nextNotes;
+  }
+  if (nextOwner !== undefined) {
+    action.owner = nextOwner;
+  }
+  if (nextDueDate !== undefined) {
+    action.dueDate = nextDueDate;
   }
   if (!persistRetroAction(retro, action)) {
     res.status(500).json({ error: "Unable to persist action." });

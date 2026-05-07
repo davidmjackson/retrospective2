@@ -487,6 +487,23 @@ async function main() {
     );
     assert(invalidStatus.status === 400, "Invalid action status was accepted.");
 
+    const updateAction = await request(
+      baseUrl,
+      "/api/actions",
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          retroId,
+          actionId,
+          owner: "Delivery Lead",
+          dueDate: "2026-05-28",
+          notes: "Updated from actions report"
+        })
+      },
+      participantLogin.cookie
+    );
+    assert(updateAction.status === 200, "Action details could not be updated.");
+
     const closeEvent = nextMessage(
       socket,
       (message) => message.type === "retroClosed",
@@ -548,10 +565,10 @@ async function main() {
       );
       assert(persistedAction.status === "todo", "Persisted action status is wrong.");
       assert(persistedAction.text === "Confirm server action", "Persisted action title is wrong.");
-      assert(persistedAction.owner === "Release Owner", "Persisted action owner is wrong.");
-      assert(persistedAction.due_date === "2026-05-20", "Persisted action due date is wrong.");
+      assert(persistedAction.owner === "Delivery Lead", "Persisted action owner is wrong.");
+      assert(persistedAction.due_date === "2026-05-28", "Persisted action due date is wrong.");
       assert(
-        persistedAction.notes === "Created from integration test",
+        persistedAction.notes === "Updated from actions report",
         "Persisted action notes are wrong."
       );
 

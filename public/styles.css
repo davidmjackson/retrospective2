@@ -163,6 +163,7 @@ textarea {
 #card-form input:focus,
 #card-form textarea:focus,
 #card-form select:focus,
+.action-field input:focus,
 .action-notes textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(91, 53, 213, 0.14);
@@ -1357,18 +1358,6 @@ textarea {
   font-size: 0.8rem;
 }
 
-.action-due-date {
-  width: fit-content;
-  margin: -2px 0 10px;
-  padding: 4px 8px;
-  border: 1px solid var(--blue-line);
-  border-radius: var(--radius);
-  background: #edf7ff;
-  color: var(--blue);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
 .action-notes {
   display: grid;
   gap: 6px;
@@ -1377,6 +1366,34 @@ textarea {
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.action-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.action-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.action-field input {
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.88rem;
+  text-transform: none;
 }
 
 .action-notes textarea {

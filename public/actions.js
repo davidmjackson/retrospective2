@@ -61,18 +61,37 @@ function createActionCard(action) {
 
   const meta = document.createElement("p");
   meta.className = "action-meta";
-  const owner = action.owner ? `Owner: ${action.owner}` : "Owner not set";
-  meta.textContent = `${owner} · ${action.team} · ${action.retroTitle} · ${formatDate(
+  meta.textContent = `${action.team} · ${action.retroTitle} · ${formatDate(
     action.createdAt
   )}`;
   card.appendChild(meta);
 
-  if (action.dueDate) {
-    const due = document.createElement("p");
-    due.className = "action-due-date";
-    due.textContent = `Due ${formatDate(action.dueDate)}`;
-    card.appendChild(due);
-  }
+  const fields = document.createElement("div");
+  fields.className = "action-fields";
+
+  const ownerLabel = document.createElement("label");
+  ownerLabel.className = "action-field";
+  const ownerText = document.createElement("span");
+  ownerText.textContent = "Owner";
+  const ownerInput = document.createElement("input");
+  ownerInput.type = "text";
+  ownerInput.maxLength = 80;
+  ownerInput.value = action.owner || "";
+  ownerLabel.appendChild(ownerText);
+  ownerLabel.appendChild(ownerInput);
+  fields.appendChild(ownerLabel);
+
+  const dueLabel = document.createElement("label");
+  dueLabel.className = "action-field";
+  const dueText = document.createElement("span");
+  dueText.textContent = "Due date";
+  const dueInput = document.createElement("input");
+  dueInput.type = "date";
+  dueInput.value = action.dueDate || "";
+  dueLabel.appendChild(dueText);
+  dueLabel.appendChild(dueInput);
+  fields.appendChild(dueLabel);
+  card.appendChild(fields);
 
   const notesLabel = document.createElement("label");
   notesLabel.className = "action-notes";
@@ -88,20 +107,27 @@ function createActionCard(action) {
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
   saveBtn.className = "secondary-btn";
-  saveBtn.textContent = "Save Notes";
+  saveBtn.textContent = "Save changes";
   saveBtn.addEventListener("click", async () => {
-    await updateAction(action.retroId, action.actionId, card.dataset.status, textarea.value);
+    await updateAction({
+      retroId: action.retroId,
+      actionId: action.actionId,
+      status: card.dataset.status,
+      notes: textarea.value,
+      owner: ownerInput.value,
+      dueDate: dueInput.value
+    });
   });
   card.appendChild(saveBtn);
 
   return card;
 }
 
-async function updateAction(retroId, actionId, status, notes) {
+async function updateAction(action) {
   const response = await fetchWithAuth("/api/actions", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ retroId, actionId, status, notes })
+    body: JSON.stringify(action)
   });
   if (!response) {
     return;
@@ -179,12 +205,16 @@ function renderBoard(actions) {
     }
     el.dataset.status = status;
     const notesInput = el.querySelector("textarea");
-    await updateAction(
-      el.dataset.retroId,
-      el.dataset.actionId,
+    const ownerInput = el.querySelector(".action-field input[type='text']");
+    const dueInput = el.querySelector(".action-field input[type='date']");
+    await updateAction({
+      retroId: el.dataset.retroId,
+      actionId: el.dataset.actionId,
       status,
-      notesInput ? notesInput.value : ""
-    );
+      notes: notesInput ? notesInput.value : "",
+      owner: ownerInput ? ownerInput.value : "",
+      dueDate: dueInput ? dueInput.value : ""
+    });
   });
 }
 

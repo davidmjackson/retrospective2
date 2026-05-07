@@ -6,6 +6,35 @@ what changed, what was verified, decisions made, and the next useful options.
 ## 2026-05-07
 
 ### Changed
+- Created `feature/edit-action-report-details`.
+- Made Actions Report cards editable for:
+  - owner
+  - due date
+  - notes
+- Extended `/api/actions` updates to persist owner and due date.
+- Preserved drag-and-drop status updates while saving the editable fields.
+- Expanded integration and browser tests for editing action details after creation.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- The Actions Report is now the place to maintain committed follow-up details after creation.
+- Status movement and field editing use the same `/api/actions` update endpoint.
+
+### Next
+- Visually review the editable Actions Report layout in the running app.
+- Consider adding clearer save feedback after changes are saved.
+- Consider merging the action branches once reviewed.
+
+## 2026-05-07 Action Details Form
+
+### Changed
 - Created `feature/action-details-form`.
 - Replaced one-click action creation with a dialog that captures:
   - action title

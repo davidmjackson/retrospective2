@@ -99,7 +99,9 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(facilitator.locator(".action-card")).toContainText(
       "Follow up on release checklist"
     );
-    await expect(facilitator.locator(".action-card")).toContainText("Owner: Release Owner");
+    await expect(
+      facilitator.locator(".action-field").filter({ hasText: "Owner" }).locator("input")
+    ).toHaveValue("Release Owner");
 
     await facilitator.goto("/lobby");
     const retroRow = facilitator.locator(".retro-item").filter({ hasText: retroTitle });
