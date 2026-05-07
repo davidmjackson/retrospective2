@@ -3,6 +3,31 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-07 Timer Complete Sound
+
+### Changed
+- Created `feature/timer-complete-sound`.
+- Added generated `public/sounds/timer-complete.wav`.
+- Added a preloaded timer-complete audio element to the retro page.
+- Replaced the previous generated browser beep with playback of the WAV asset.
+- Added browser coverage that the timer sound asset is wired into the page.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- WAV header validation
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- Timer completion should use a short local WAV file so it works without external assets.
+- Audio is unlocked from the user's first page interaction or the facilitator's Start click.
+
+### Next
+- Commit, push, merge to `main`, and deploy the update.
+
 ## 2026-05-07 Card Creator Initials
 
 ### Changed

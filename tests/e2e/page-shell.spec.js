@@ -146,6 +146,10 @@ test("mobile retrospective timer controls remain compact", async ({ page }) => {
   const timerControls = page.locator(".timer-controls");
   await expect(page.locator(".timer-readout")).toContainText("Time remaining");
   await expect(page.locator("#timer-display")).toBeVisible();
+  await expect(page.locator("#timer-complete-sound")).toHaveAttribute(
+    "src",
+    "sounds/timer-complete.wav"
+  );
   await expect(timerControls).toBeVisible();
   await expect(timerControls).toHaveCSS("display", "grid");
   const timerControlsBox = await timerControls.boundingBox();

@@ -13,6 +13,7 @@ const timerStart = document.getElementById("timer-start");
 const timerStop = document.getElementById("timer-stop");
 const timerReset = document.getElementById("timer-reset");
 const timerControls = document.querySelector(".timer-controls");
+const timerCompleteSound = document.getElementById("timer-complete-sound");
 const actionDialog = document.getElementById("action-dialog");
 const actionForm = document.getElementById("action-form");
 const actionCardIdInput = document.getElementById("action-card-id");
@@ -71,7 +72,7 @@ let isReadOnly = false;
 
 let remainingSeconds = 5 * 60;
 let lastRemainingSeconds = remainingSeconds;
-let audioContext = null;
+let timerSoundUnlocked = false;
 let socket = null;
 let onlineUsers = 0;
 
@@ -342,34 +343,44 @@ function getTimerMinutesInputValue() {
   return Math.max(1, parsed);
 }
 
-function ensureAudioContext() {
-  const AudioConstructor = window.AudioContext || window.webkitAudioContext;
-  if (!AudioConstructor) {
+function unlockTimerSound() {
+  if (!timerCompleteSound || timerSoundUnlocked) {
     return;
   }
-  if (!audioContext) {
-    audioContext = new AudioConstructor();
-  }
-  if (audioContext.state === "suspended") {
-    audioContext.resume();
+  const previousVolume = timerCompleteSound.volume;
+  timerCompleteSound.volume = 0;
+  timerCompleteSound.currentTime = 0;
+  const playAttempt = timerCompleteSound.play();
+  if (playAttempt && typeof playAttempt.then === "function") {
+    playAttempt
+      .then(() => {
+        timerCompleteSound.pause();
+        timerCompleteSound.currentTime = 0;
+        timerCompleteSound.volume = previousVolume || 1;
+        timerSoundUnlocked = true;
+      })
+      .catch(() => {
+        timerCompleteSound.volume = previousVolume || 1;
+      });
+  } else {
+    timerCompleteSound.pause();
+    timerCompleteSound.currentTime = 0;
+    timerCompleteSound.volume = previousVolume || 1;
+    timerSoundUnlocked = true;
   }
 }
 
 function playTimerSound() {
-  if (!audioContext) {
+  if (!timerCompleteSound) {
     return;
   }
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.value = 880;
-  gain.gain.value = 0.2;
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  oscillator.start();
-  setTimeout(() => {
-    oscillator.stop();
-  }, 600);
+  timerCompleteSound.pause();
+  timerCompleteSound.currentTime = 0;
+  timerCompleteSound.volume = 1;
+  const playAttempt = timerCompleteSound.play();
+  if (playAttempt && typeof playAttempt.catch === "function") {
+    playAttempt.catch(() => {});
+  }
 }
 
 timerInc.addEventListener("click", () => {
@@ -404,7 +415,7 @@ timerStart.addEventListener("click", () => {
   if (!isFacilitator || isReadOnly) {
     return;
   }
-  ensureAudioContext();
+  unlockTimerSound();
   const minutes = getTimerMinutesInputValue();
   timerMinutesInput.value = String(minutes);
   sendMessage({ type: "timer", action: "start", minutes });
@@ -425,7 +436,7 @@ timerReset.addEventListener("click", () => {
 });
 
 updateTimerDisplay();
-document.addEventListener("click", ensureAudioContext, { once: true });
+document.addEventListener("click", unlockTimerSound, { once: true });
 
 function applyReadOnlyState() {
   document.body.classList.toggle("read-only", isReadOnly);
