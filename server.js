@@ -918,6 +918,13 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    uptimeSeconds: Math.floor(process.uptime())
+  });
+});
+
 app.use(express.static(path.join(__dirname, "public"), { index: false }));
 
 app.post("/api/login", (req, res) => {

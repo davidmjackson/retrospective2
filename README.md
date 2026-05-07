@@ -36,12 +36,18 @@ Open `http://localhost:3001` (or the configured host/port).
 - `/api/actions` update action status/notes
 - `/api/admin/teams` list all teams (admin only)
 - `/api/admin/teams/:id` delete a team (admin only)
+- `/health` unauthenticated runtime health check
 Authentication uses a signed `retro_auth` cookie issued by `POST /api/login`.
 Set `RETRO_AUTH_SECRET` in production so sessions survive restarts.
 Set `RETRO_ALLOWED_ORIGINS` to a comma-separated list of allowed browser origins
 when serving the app behind a known domain.
 Login rate limiting defaults to 20 failed attempts per 15 minutes per IP/role/team.
 Tune with `RETRO_LOGIN_RATE_LIMIT_MAX` and `RETRO_LOGIN_RATE_LIMIT_WINDOW_MS`.
+
+## Deployment
+- Use `.env.example` as the starting point for production configuration.
+- See `docs/deployment.md` for the go-live checklist, `systemd` service example,
+  Nginx reverse proxy example, database migration, and backup guidance.
 
 ## Team Access Keys
 - Team names are case-insensitive and unique.

@@ -1,0 +1,20 @@
+[Unit]
+Description=Retrospective app
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/retrospective
+EnvironmentFile=/var/www/retrospective/.env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+User=retrospective
+Group=retrospective
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/retrospective
+
+[Install]
+WantedBy=multi-user.target

@@ -214,6 +214,14 @@ async function main() {
     );
     assert(!rootPage.headers.has("x-powered-by"), "X-Powered-By header is exposed.");
 
+    const health = await request(baseUrl, "/health");
+    assert(health.status === 200, "Health check did not return OK.");
+    assert(health.body.status === "ok", "Health check status is wrong.");
+    assert(
+      Number.isInteger(health.body.uptimeSeconds),
+      "Health check uptime was not returned."
+    );
+
     const facilitatorLogin = await request(
       baseUrl,
       "/api/login",

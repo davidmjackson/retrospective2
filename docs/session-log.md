@@ -3,6 +3,31 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-07 Deployment Readiness
+
+### Changed
+- Created `feature/deployment-readiness`.
+- Added unauthenticated `/health` endpoint for uptime and reverse-proxy checks.
+- Added `.env.example` for production configuration.
+- Added `docs/deployment.md` with go-live, migration, HTTPS, backup, and smoke-test guidance.
+- Added example `systemd` and Nginx deployment configs.
+
+### Verified
+- `node --check`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- DB migrate/vacuum check with a temporary SQLite database
+
+### Decisions
+- Production should run behind a reverse proxy and process manager, not from a manual shell.
+- The live SQLite database should be stored outside the Git working tree.
+
+### Next
+- Merge the accepted feature branches into `main` before publishing the live repo.
+- Confirm final domain and GitHub repository target before live deployment.
+
 ## 2026-05-07
 
 ### Changed
