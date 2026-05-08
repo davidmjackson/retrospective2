@@ -3,6 +3,36 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-08 Scrum Poker Handover
+
+### Changed
+- Created `feature/scrum-poker-handover`.
+- Added `docs/scrum-poker-handover.md` with:
+  - Retrospective architecture and design-language notes.
+  - Retrospective CSS tokens and reusable component conventions.
+  - Scrum Poker local/live inspection notes.
+  - Initial recommendation to rebuild Scrum Poker inside its existing repo while preserving current behavior.
+
+### Verified
+- Retrospective startup context read from `README.md` and this session log.
+- Retrospective branch/status/log/process checks.
+- Scrum Poker branch/status/log/process checks.
+- Live Scrum Poker root page responded at `https://www.scrum-poker.uk/`.
+- Live Scrum Poker WebSocket opened and returned a `yourId` message.
+- `node --check server.js` in `/var/www/scrumpoker`.
+- `node --check public/js/app.js` in `/var/www/scrumpoker`.
+
+### Notes
+- Scrum Poker has no `npm test` script.
+- `npm audit --omit=dev` in Scrum Poker reported 4 production dependency vulnerabilities.
+- Retrospective screenshot generation was attempted but local Playwright Chromium is missing `libnspr4.so`, so no screenshots were produced.
+- Existing untracked `.vscode/extensions.json` in Retrospective was left untouched.
+
+### Next
+- Copy `docs/scrum-poker-handover.md` into the Scrum Poker project.
+- Start Scrum Poker work on a new feature branch.
+- Add baseline tests around the current Scrum Poker behavior before replacing the UI.
+
 ## 2026-05-07 Restricted Team Creation
 
 ### Changed
