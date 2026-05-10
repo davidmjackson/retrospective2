@@ -30,6 +30,18 @@ what changed, what was verified, decisions made, and the next useful options.
 - Deploy this fix to production after review/merge.
 - Smoke test with two browsers logged into the same team: one facilitator closes from the lobby and another user sees the lobby status become closed immediately.
 
+## 2026-05-10 Project Instructions File
+
+### Changed
+- Added root `AGENTS.md` with the standing Retrospective project instructions.
+- Added a communication rule to append `; echo` to shell commands that may print output without a trailing newline.
+
+### Verified
+- Documentation-only change.
+
+### Next
+- Future sessions should pick up the command-output newline preference from `AGENTS.md`.
+
 ## 2026-05-07 Restricted Team Creation
 
 ### Changed
