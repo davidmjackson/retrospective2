@@ -39,4 +39,5 @@ Communication:
 - Explain what you are doing and why while working.
 - At the end, report branch, commit hash, tests run, push status, and server status.
 - When providing code to run or steps for me to action provide them one at a time so I have time to execute your requests. This means if a step fails you can help troubleshoot the issue before moving on to the next step.
+- When providing production pull/deploy commands, condense related commands together where practical, while keeping risky or troubleshooting steps separate when sequential confirmation is useful.
 - When providing shell commands that may print output without a trailing newline, append `; echo` so the shell prompt appears on a new line. For example: `curl -fsS http://127.0.0.1:3001/health; echo`.

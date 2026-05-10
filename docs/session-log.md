@@ -35,6 +35,7 @@ what changed, what was verified, decisions made, and the next useful options.
 ### Changed
 - Added root `AGENTS.md` with the standing Retrospective project instructions.
 - Added a communication rule to append `; echo` to shell commands that may print output without a trailing newline.
+- Added a communication rule to condense production pull/deploy commands where practical.
 
 ### Verified
 - Documentation-only change.
