@@ -19,6 +19,7 @@ const teamKeyDismiss = document.getElementById("team-key-dismiss");
 let userName = "";
 let userRole = "participant";
 let userTeam = "";
+let lobbySocket = null;
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
@@ -136,6 +137,30 @@ async function loadRetros() {
   const data = await response.json();
   retros = data.retros || [];
   renderRetros();
+}
+
+function connectLobbySocket() {
+  const socketProtocol = location.protocol === "https:" ? "wss" : "ws";
+  const query = new URLSearchParams({ view: "lobby" });
+  lobbySocket = new WebSocket(
+    `${socketProtocol}://${location.host}?${query.toString()}`
+  );
+
+  lobbySocket.addEventListener("message", (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "error") {
+      if (data.message === "Unauthorized.") {
+        handleUnauthorized({ status: 401 });
+        return;
+      }
+      window.location.href = "/lobby";
+      return;
+    }
+    if (data.type === "retros") {
+      retros = data.retros || [];
+      renderRetros();
+    }
+  });
 }
 
 sortSelect.addEventListener("change", renderRetros);
@@ -298,6 +323,7 @@ async function init() {
   }
   showTeamKey();
   await loadRetros();
+  connectLobbySocket();
 }
 
 init();

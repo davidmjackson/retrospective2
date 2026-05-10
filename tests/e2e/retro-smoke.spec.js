@@ -108,6 +108,12 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
       facilitator.locator("#col-well .card").filter({ hasText: "The demo flow is clear" })
     ).toBeVisible();
 
+    await participant.goto("/lobby");
+    const participantRetroRow = participant
+      .locator(".retro-item")
+      .filter({ hasText: retroTitle });
+    await expect(participantRetroRow).toContainText("Status: Open");
+
     await facilitator.goto("/actions");
     await expect(facilitator.locator("#actions-count")).toHaveText("1 actions total");
     await expect(facilitator.locator(".action-card")).toContainText(
@@ -122,6 +128,7 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(retroRow).toContainText("Status: Open");
     await retroRow.getByRole("button", { name: "Close" }).click();
     await expect(retroRow).toContainText("Status: Closed");
+    await expect(participantRetroRow).toContainText("Status: Closed");
 
     await facilitator.goto(retroUrl);
     await expect(facilitator.locator("body")).toHaveClass(/read-only/);

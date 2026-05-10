@@ -677,8 +677,13 @@ function connectSocket() {
     }
 
     if (data.type === "retroClosed") {
+      if (data.retro) {
+        currentState = data.retro;
+      }
       isReadOnly = true;
-      retroStatus.textContent = "Closed";
+      retroStatus.textContent = data.retro?.closedAt
+        ? `Closed · ${new Date(data.retro.closedAt).toLocaleDateString()}`
+        : "Closed";
       retroStatus.classList.remove("open");
       retroStatus.classList.add("closed");
       applyReadOnlyState();

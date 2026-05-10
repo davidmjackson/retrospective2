@@ -3,6 +3,33 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-10 Live Retro Close Updates
+
+### Changed
+- Created `feature/live-retro-close-updates` from `main`.
+- Added authenticated team-level lobby WebSocket subscriptions.
+- Broadcast refreshed lobby retro lists when a retro is created or closed.
+- Updated the retrospective page close handler to keep its local state and closed date in sync with the server event.
+- Added integration and browser coverage for other logged-in users seeing a retro close without refreshing.
+
+### Verified
+- `node --check server.js`
+- `node --check public/lobby.js`
+- `node --check public/client.js`
+- `node --check tests/ws-operations.test.js`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+
+### Decisions
+- Lobby clients now subscribe by authenticated team rather than polling or relying on manual refresh.
+- The existing board-level `retroClosed` event remains the source of truth for users inside a retrospective.
+
+### Next
+- Deploy this fix to production after review/merge.
+- Smoke test with two browsers logged into the same team: one facilitator closes from the lobby and another user sees the lobby status become closed immediately.
+
 ## 2026-05-07 Restricted Team Creation
 
 ### Changed

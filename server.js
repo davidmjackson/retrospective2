@@ -30,6 +30,7 @@ const wss = new WebSocketServer({ server });
 
 const clients = new Map();
 const rooms = new Map();
+const lobbyRooms = new Map();
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
@@ -830,6 +831,21 @@ function getRetro(id) {
   return state.retros.find((retro) => retro.id === id);
 }
 
+function listRetrosForTeam(normalizedTeam) {
+  return state.retros
+    .filter((retro) => {
+      return (retro.team || "").toLowerCase() === normalizedTeam;
+    })
+    .map((retro) => ({
+      id: retro.id,
+      title: retro.title,
+      team: retro.team,
+      createdAt: retro.createdAt,
+      closed: retro.closed,
+      closedAt: retro.closedAt
+    }));
+}
+
 function listPresence(retroId) {
   return Array.from(clients.values())
     .filter((client) => client.retroId === retroId)
@@ -847,6 +863,44 @@ function broadcastToRetro(retroId, payload) {
       client.send(message);
     }
   }
+}
+
+function joinLobbyRoom(teamName, ws) {
+  if (!lobbyRooms.has(teamName)) {
+    lobbyRooms.set(teamName, new Set());
+  }
+  lobbyRooms.get(teamName).add(ws);
+}
+
+function leaveLobbyRoom(teamName, ws) {
+  const room = lobbyRooms.get(teamName);
+  if (!room) {
+    return;
+  }
+  room.delete(ws);
+  if (room.size === 0) {
+    lobbyRooms.delete(teamName);
+  }
+}
+
+function broadcastToLobby(teamName, payload) {
+  const message = JSON.stringify(payload);
+  const room = lobbyRooms.get(teamName);
+  if (!room) {
+    return;
+  }
+  for (const client of room) {
+    if (client.readyState === 1) {
+      client.send(message);
+    }
+  }
+}
+
+function broadcastRetrosToLobby(teamName) {
+  broadcastToLobby(teamName, {
+    type: "retros",
+    retros: listRetrosForTeam(teamName)
+  });
 }
 
 function closeTeamRooms(teamName) {
@@ -875,6 +929,21 @@ function closeTeamRooms(teamName) {
     }
     rooms.delete(retroId);
   });
+  const lobbyRoom = lobbyRooms.get(normalized);
+  if (lobbyRoom) {
+    for (const client of lobbyRoom) {
+      try {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "error", message: "Team deleted." }));
+        }
+        client.close();
+      } catch (err) {
+        // ignore
+      }
+      clients.delete(client);
+    }
+    lobbyRooms.delete(normalized);
+  }
 }
 
 function joinRoom(retroId, ws) {
@@ -1153,19 +1222,7 @@ app.get("/api/retros", (req, res) => {
   if (!auth) {
     return;
   }
-  const retros = state.retros
-    .filter((retro) => {
-      return (retro.team || "").toLowerCase() === auth.normalizedTeam;
-    })
-    .map((retro) => ({
-      id: retro.id,
-      title: retro.title,
-      team: retro.team,
-      createdAt: retro.createdAt,
-      closed: retro.closed,
-      closedAt: retro.closedAt
-    }));
-  res.json({ retros });
+  res.json({ retros: listRetrosForTeam(auth.normalizedTeam) });
 });
 
 app.post("/api/retros", (req, res) => {
@@ -1191,6 +1248,7 @@ app.post("/api/retros", (req, res) => {
     res.status(500).json({ error: "Unable to persist retro." });
     return;
   }
+  broadcastRetrosToLobby(auth.normalizedTeam);
   res.status(201).json({ retro });
 });
 
@@ -1221,6 +1279,7 @@ app.post("/api/retros/:id/close", (req, res) => {
     return;
   }
   broadcastToRetro(retro.id, { type: "retroClosed", retro });
+  broadcastRetrosToLobby(auth.normalizedTeam);
   res.json({ retro });
 });
 
@@ -1344,11 +1403,35 @@ wss.on("connection", (ws, req) => {
   }
   const url = new URL(req.url, `http://${req.headers.host}`);
   const retroId = url.searchParams.get("retroId");
+  const view = url.searchParams.get("view");
   const auth = getAuthFromHeaders(req.headers);
   const retro = retroId ? getRetro(retroId) : null;
   if (!auth) {
     ws.send(JSON.stringify({ type: "error", message: "Unauthorized." }));
     ws.close();
+    return;
+  }
+  if (view === "lobby" && auth.team) {
+    const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    clients.set(ws, {
+      id: clientId,
+      name: auth.name || "Anonymous",
+      team: auth.normalizedTeam,
+      role: auth.role,
+      view: "lobby"
+    });
+    joinLobbyRoom(auth.normalizedTeam, ws);
+    ws.send(
+      JSON.stringify({
+        type: "retros",
+        retros: listRetrosForTeam(auth.normalizedTeam)
+      })
+    );
+
+    ws.on("close", () => {
+      clients.delete(ws);
+      leaveLobbyRoom(auth.normalizedTeam, ws);
+    });
     return;
   }
   if (
