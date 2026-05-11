@@ -3,6 +3,22 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-11 WebSocket Test Race Fix
+
+### Changed
+- Fixed the WebSocket/API integration test to buffer early WebSocket messages before the socket `open` promise resolves.
+- This prevents the initial retro state message from being missed on faster production hosts.
+
+### Verified
+- `node --check tests/ws-operations.test.js`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+
+### Next
+- Pull the updated branch on production and re-run `npm test`.
+
 ## 2026-05-11 Local Codebase Security Scan
 
 ### Changed

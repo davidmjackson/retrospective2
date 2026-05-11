@@ -81,6 +81,7 @@ function openSocket(baseWsUrl, retroId, cookie) {
     const ws = new WebSocket(`${baseWsUrl}?retroId=${encodeURIComponent(retroId)}`, {
       headers: { Cookie: cookie }
     });
+    attachMessageBuffer(ws);
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
   });
@@ -91,6 +92,7 @@ function openLobbySocket(baseWsUrl, cookie) {
     const ws = new WebSocket(`${baseWsUrl}?view=lobby`, {
       headers: { Cookie: cookie }
     });
+    attachMessageBuffer(ws);
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
   });
@@ -124,28 +126,54 @@ function openRejectedSocket(baseWsUrl, retroId, cookie, origin) {
 }
 
 function nextMessage(ws, predicate, label = "WebSocket message", timeoutMs = 3000) {
+  attachMessageBuffer(ws);
   return new Promise((resolve, reject) => {
-    const seen = [];
+    const bufferedIndex = ws.__messageBuffer.findIndex((message) => {
+      return !predicate || predicate(message);
+    });
+    if (bufferedIndex !== -1) {
+      const [message] = ws.__messageBuffer.splice(bufferedIndex, 1);
+      resolve(message);
+      return;
+    }
+
     const timeout = setTimeout(() => {
-      ws.off("message", handleMessage);
+      const waiterIndex = ws.__messageWaiters.indexOf(waiter);
+      if (waiterIndex !== -1) {
+        ws.__messageWaiters.splice(waiterIndex, 1);
+      }
       reject(
         new Error(
-          `Timed out waiting for ${label}. Seen: ${JSON.stringify(seen.slice(-5))}`
+          `Timed out waiting for ${label}. Seen: ${JSON.stringify(
+            ws.__messageBuffer.slice(-5)
+          )}`
         )
       );
     }, timeoutMs);
 
-    function handleMessage(raw) {
-      const message = JSON.parse(raw.toString());
-      seen.push(message);
-      if (!predicate || predicate(message)) {
-        clearTimeout(timeout);
-        ws.off("message", handleMessage);
-        resolve(message);
-      }
-    }
+    const waiter = { predicate, resolve, timeout };
+    ws.__messageWaiters.push(waiter);
+  });
+}
 
-    ws.on("message", handleMessage);
+function attachMessageBuffer(ws) {
+  if (ws.__messageBuffer) {
+    return;
+  }
+  ws.__messageBuffer = [];
+  ws.__messageWaiters = [];
+  ws.on("message", (raw) => {
+    const message = JSON.parse(raw.toString());
+    const waiterIndex = ws.__messageWaiters.findIndex((waiter) => {
+      return !waiter.predicate || waiter.predicate(message);
+    });
+    if (waiterIndex !== -1) {
+      const [waiter] = ws.__messageWaiters.splice(waiterIndex, 1);
+      clearTimeout(waiter.timeout);
+      waiter.resolve(message);
+      return;
+    }
+    ws.__messageBuffer.push(message);
   });
 }
 
