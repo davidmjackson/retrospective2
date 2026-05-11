@@ -3,6 +3,35 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-11 Local Codebase Security Scan
+
+### Changed
+- Performed a non-destructive local security review of the Node/Express, WebSocket, SQLite, and browser code paths.
+- No application code was changed.
+
+### Verified
+- Reviewed README/session context, current branch/status, recent commits, and server process state.
+- Reviewed authentication, authorization, WebSocket origin/auth checks, SQLite persistence, DOM rendering, and deployment examples.
+- `node --check` on all tracked JavaScript files.
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+- `npm audit`
+
+### Findings
+- Login rate limiting trusts the first `X-Forwarded-For` value, while the example Nginx config appends client-supplied values, allowing spoofed headers to bypass per-IP login throttling.
+- Team and admin join keys are limited to 5 lowercase alphanumeric characters, which is too small for a shared secret.
+- Local `.env`, `retros.db`, and `state.json` files are present in the web root checkout with broad read permissions; production docs already recommend tighter `.env` permissions and moving the live database outside the repo.
+- Authenticated API responses do not set `Cache-Control: no-store`, including responses that contain retro data and team keys.
+- Newly generated team keys are stored in browser `localStorage`, increasing impact if a browser/session is compromised.
+
+### Next
+- Fix proxy-aware rate limiting by using a trusted proxy source for the real client IP or overwriting `X-Forwarded-For` at the reverse proxy.
+- Increase team/admin key length and allow stronger admin key formats before relying on keys as shared secrets.
+- Tighten local/production secret and database file permissions and keep live SQLite data outside `/var/www/retrospective`.
+- Add no-store cache headers for authenticated API responses.
+
 ## 2026-05-11 Live Security Scan
 
 ### Changed
