@@ -3,6 +3,38 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-11 Live Security Scan
+
+### Changed
+- Performed a non-destructive external security baseline against `https://sprintretro.uk/`.
+- No application code was changed.
+
+### Verified
+- `http://sprintretro.uk/` redirects to HTTPS.
+- `https://sprintretro.uk/` serves CSP, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and `Permissions-Policy` headers.
+- `/api/session` and `/api/admin/teams` return `401` without authentication.
+- One targeted default admin-key login check returned `403 Invalid admin key`.
+- Common accidental exposures returned `404`: `.env`, `retros.db`, `state.json`, `.git/config`, `package.json`, `package-lock.json`, `server.js`, `db.js`, `AGENTS.md`, and `docs/session-log.md`.
+- WebSocket checks rejected a foreign Origin and rejected an unauthenticated same-host connection.
+- TLS certificate is valid for `sprintretro.uk` and `www.sprintretro.uk`, issued by Let's Encrypt E7, valid from 2026-05-07 to 2026-08-05.
+- TLS 1.2 and TLS 1.3 handshakes succeeded with modern ciphers.
+- Port check found 80, 443, and SSH port 22 reachable; app port 3001 was not reachable directly.
+- `npm audit --omit=dev`
+- `npm audit`
+
+### Findings
+- HTTPS responses are missing `Strict-Transport-Security`.
+- Apache exposes a `Server: Apache` banner on public responses.
+- Both apex and `www` hostnames serve the app directly instead of redirecting to one canonical host.
+- SSH is reachable publicly and advertises its OpenSSH/Ubuntu banner.
+
+### Next
+- Add HSTS at the reverse proxy after confirming all desired subdomains are HTTPS-ready.
+- Reduce Apache server token exposure.
+- Choose a canonical host and redirect the other hostname.
+- Confirm SSH is restricted to trusted source IPs or otherwise hardened with keys-only auth, no password login, and rate limiting.
+- Consider `Cache-Control: no-store` for authenticated API responses.
+
 ## 2026-05-10 Live Retro Close Updates
 
 ### Changed
