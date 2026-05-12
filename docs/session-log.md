@@ -3,6 +3,21 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-12 WebSocket Race Fix Checkout Verification
+
+### Changed
+- Confirmed `/var/www/retrospective` is on `feature/live-retro-close-updates` at `3765e7c`.
+- No application code was changed.
+
+### Verified
+- Reviewed README/session context, current branch/status, recent commits, and server process state.
+- Confirmed no `node server.js` process was running.
+- `npm test`
+
+### Next
+- If this checkout represents production deployment, restart the app under its normal process manager and smoke test the lobby close update with two logged-in browser sessions.
+- If this is still pre-merge, merge `feature/live-retro-close-updates` to `main` after review and deploy from `main`.
+
 ## 2026-05-11 WebSocket Test Race Fix
 
 ### Changed
