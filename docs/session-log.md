@@ -3,6 +3,27 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-15 Retrospective Instructions Modal
+
+### Changed
+- Created `feature/retrospective-instructions-modal` from `feature/live-retro-close-updates`.
+- Linked the Retrospective page `Show instructions` button to an in-page modal.
+- Added guidance for the suggested retro flow, Start/Stop/Continue columns, voting, timer, participants, retro health, and actions report.
+- Added browser coverage that opens and closes the instructions modal from the core retrospective workflow.
+
+### Verified
+- Reviewed README/session context, current branch/status, recent commits, and server process state.
+- Confirmed no `node server.js` process was running before work began.
+- `node --check public/client.js`
+- `node --check tests/e2e/retro-smoke.spec.js`
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+
+### Next
+- Review the modal copy with users after a live session and tune wording if the team wants a more facilitation-led or participant-led guide.
+
 ## 2026-05-12 WebSocket Race Fix Checkout Verification
 
 ### Changed

@@ -56,6 +56,16 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     const retroUrl = facilitator.url();
     await expect(facilitator.locator("#status")).toHaveText("Live");
     await expect(facilitator.locator("#retro-title")).toHaveText(retroTitle);
+    await facilitator.getByRole("button", { name: "Show instructions" }).click();
+    await expect(facilitator.locator("#instructions-dialog")).toBeVisible();
+    await expect(facilitator.locator("#instructions-dialog")).toContainText(
+      "How to run the retrospective"
+    );
+    await expect(facilitator.locator("#instructions-dialog")).toContainText(
+      "Use the board to gather notes, vote on priorities, and create follow-up actions."
+    );
+    await facilitator.getByRole("button", { name: "Got it" }).click();
+    await expect(facilitator.locator("#instructions-dialog")).toBeHidden();
 
     await facilitator.locator("#card-column").selectOption("continue");
     await facilitator.locator("#card-text").fill("Follow up on release checklist");

@@ -49,7 +49,9 @@
 
         <section class="instruction-banner">
           <p>Add your thoughts to the board. Vote on items you agree with most.</p>
-          <button type="button" class="secondary-btn">Show instructions</button>
+          <button type="button" class="secondary-btn" id="show-instructions">
+            Show instructions
+          </button>
         </section>
 
         <section class="composer">
@@ -232,6 +234,70 @@
           <button type="submit" class="primary-btn">Create action</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog class="action-dialog instructions-dialog" id="instructions-dialog">
+      <div class="instructions-content">
+        <header class="dialog-header">
+          <div>
+            <h2>How to run the retrospective</h2>
+            <p>Use the board to gather notes, vote on priorities, and create follow-up actions.</p>
+          </div>
+          <button
+            type="button"
+            class="dialog-close"
+            id="instructions-close"
+            aria-label="Close instructions"
+          >
+            ×
+          </button>
+        </header>
+
+        <section class="instruction-section" aria-labelledby="instruction-flow-title">
+          <h3 id="instruction-flow-title">Suggested flow</h3>
+          <ol>
+            <li>Add short notes to Start, Stop, and Continue.</li>
+            <li>Use details when a note needs extra context.</li>
+            <li>Vote on the notes that matter most to you.</li>
+            <li>Discuss the highest-voted notes with the team.</li>
+            <li>Create action items for decisions that need follow-up.</li>
+          </ol>
+        </section>
+
+        <section class="instruction-section" aria-labelledby="instruction-columns-title">
+          <h3 id="instruction-columns-title">Columns</h3>
+          <dl class="instruction-list">
+            <div>
+              <dt>Start</dt>
+              <dd>Ideas, behaviours, or practices the team should begin doing.</dd>
+            </div>
+            <div>
+              <dt>Stop</dt>
+              <dd>Things that slow the team down or should be reduced.</dd>
+            </div>
+            <div>
+              <dt>Continue</dt>
+              <dd>Working habits and strengths the team should keep.</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="instruction-section" aria-labelledby="instruction-tools-title">
+          <h3 id="instruction-tools-title">Tools on this page</h3>
+          <ul>
+            <li>The timer helps the facilitator timebox writing, voting, and discussion.</li>
+            <li>Retro Health shows whether every column has notes and enough votes.</li>
+            <li>Participants shows who is currently connected to the board.</li>
+            <li>The Actions report lists follow-up items created from retro notes.</li>
+          </ul>
+        </section>
+
+        <div class="dialog-actions">
+          <button type="button" class="primary-btn" id="instructions-dismiss">
+            Got it
+          </button>
+        </div>
+      </div>
     </dialog>
 
     <script src="vendor/dragula/dragula.min.js"></script>

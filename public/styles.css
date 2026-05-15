@@ -1496,10 +1496,17 @@ textarea {
   background: rgba(15, 23, 42, 0.42);
 }
 
-.action-dialog form {
+.action-dialog form,
+.instructions-content {
   padding: 22px;
   display: grid;
   gap: 14px;
+}
+
+.instructions-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: auto;
 }
 
 .dialog-header {
@@ -1539,6 +1546,51 @@ textarea {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
+}
+
+.instruction-section {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.instruction-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.instruction-section ol,
+.instruction-section ul {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--muted);
+}
+
+.instruction-section li + li {
+  margin-top: 6px;
+}
+
+.instruction-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.instruction-list div {
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.instruction-list dt {
+  margin-bottom: 2px;
+  font-weight: 800;
+}
+
+.instruction-list dd {
+  margin: 0;
+  color: var(--muted);
 }
 
 @media (max-width: 1080px) {

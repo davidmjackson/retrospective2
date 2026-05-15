@@ -23,6 +23,10 @@ const actionDueDateInput = document.getElementById("action-due-date");
 const actionNotesInput = document.getElementById("action-notes");
 const actionCancel = document.getElementById("action-cancel");
 const actionDismiss = document.getElementById("action-dismiss");
+const instructionsButton = document.getElementById("show-instructions");
+const instructionsDialog = document.getElementById("instructions-dialog");
+const instructionsClose = document.getElementById("instructions-close");
+const instructionsDismiss = document.getElementById("instructions-dismiss");
 const healthStats = {
   notes: document.getElementById("stat-notes"),
   votes: document.getElementById("stat-votes"),
@@ -296,6 +300,26 @@ function closeActionDialog() {
   }
 }
 
+function closeInstructionsDialog() {
+  if (instructionsDialog && instructionsDialog.open) {
+    instructionsDialog.close();
+  }
+}
+
+function openInstructionsDialog() {
+  if (!instructionsDialog) {
+    return;
+  }
+  if (typeof instructionsDialog.showModal === "function") {
+    instructionsDialog.showModal();
+  } else {
+    instructionsDialog.setAttribute("open", "");
+  }
+  if (instructionsClose) {
+    instructionsClose.focus();
+  }
+}
+
 function openActionDialog(cardEl) {
   if (
     !actionDialog ||
@@ -517,6 +541,26 @@ if (actionDialog) {
   actionDialog.addEventListener("click", (event) => {
     if (event.target === actionDialog) {
       closeActionDialog();
+    }
+  });
+}
+
+if (instructionsButton) {
+  instructionsButton.addEventListener("click", openInstructionsDialog);
+}
+
+if (instructionsClose) {
+  instructionsClose.addEventListener("click", closeInstructionsDialog);
+}
+
+if (instructionsDismiss) {
+  instructionsDismiss.addEventListener("click", closeInstructionsDialog);
+}
+
+if (instructionsDialog) {
+  instructionsDialog.addEventListener("click", (event) => {
+    if (event.target === instructionsDialog) {
+      closeInstructionsDialog();
     }
   });
 }
