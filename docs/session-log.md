@@ -3,6 +3,36 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Note Composer Modal
+
+### Changed
+- Created `feature/note-composer-modal` from `feature/retrospective-instructions-modal`.
+- Replaced the inline card composer (note/details/column-select row) with a
+  per-column "Create Note" button at the bottom of Start, Stop, and Continue.
+- Each button opens a small modal with a single-line note field and a
+  resizable multiline details field; the modal header shows the target column.
+- Modal uses save (✓) and close (×) icon buttons; the destination column is
+  fixed by which column's button was used.
+- Updated `retro-smoke` and `page-shell` e2e specs for the new add-note flow.
+
+### Verified
+- `node --check` on `public/client.js`, `tests/e2e/retro-smoke.spec.js`,
+  `tests/e2e/page-shell.spec.js`.
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e` (5 passed)
+- `npm audit --omit=dev` — one pre-existing moderate `ws` advisory
+  (GHSA-58qx-3vcg-4xpx, fix available), unrelated to this change.
+- Visual check of the column buttons and open modal against the running dev server.
+
+### Decisions
+- The "Choose a column" field was dropped: opening the modal from a specific
+  column's button already determines the destination, so a chooser is redundant.
+
+### Next
+- Decide whether to clear the moderate `ws` advisory with `npm audit fix`.
+- Review the modal copy and save/close icon affordance with users after a live session.
+
 ## 2026-05-15 Retrospective Instructions Modal
 
 ### Changed

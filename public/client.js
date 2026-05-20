@@ -27,6 +27,14 @@ const instructionsButton = document.getElementById("show-instructions");
 const instructionsDialog = document.getElementById("instructions-dialog");
 const instructionsClose = document.getElementById("instructions-close");
 const instructionsDismiss = document.getElementById("instructions-dismiss");
+const noteDialog = document.getElementById("note-dialog");
+const noteForm = document.getElementById("note-form");
+const noteText = document.getElementById("note-text");
+const noteDetails = document.getElementById("note-details");
+const noteColumnInput = document.getElementById("note-column");
+const noteColumnLabel = document.getElementById("note-column-label");
+const noteClose = document.getElementById("note-close");
+const columnAddButtons = document.querySelectorAll(".column-add");
 const healthStats = {
   notes: document.getElementById("stat-notes"),
   votes: document.getElementById("stat-votes"),
@@ -590,34 +598,74 @@ if (actionForm) {
   });
 }
 
-const form = document.getElementById("card-form");
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (isReadOnly) {
-    return;
+function closeNoteDialog() {
+  if (noteDialog && noteDialog.open) {
+    noteDialog.close();
   }
-  const textInput = document.getElementById("card-text");
-  const detailsInput = document.getElementById("card-details");
-  const columnSelect = document.getElementById("card-column");
-  const text = textInput.value.trim();
-  const details = detailsInput.value.trim();
-  if (!text) {
-    return;
-  }
-  const didSend = sendMessage({
-    type: "addCard",
-    column: columnSelect.value,
-    text,
-    details
-  });
-  if (!didSend) {
-    return;
-  }
+}
 
-  textInput.value = "";
-  detailsInput.value = "";
-  textInput.focus();
+function openNoteDialog(column) {
+  if (!noteDialog || !noteText || !noteDetails || !noteColumnInput) {
+    return;
+  }
+  if (isReadOnly || !columns[column]) {
+    return;
+  }
+  noteColumnInput.value = column;
+  if (noteColumnLabel) {
+    noteColumnLabel.textContent = columnLabels[column] || column;
+  }
+  noteText.value = "";
+  noteDetails.value = "";
+  if (typeof noteDialog.showModal === "function") {
+    noteDialog.showModal();
+  } else {
+    noteDialog.setAttribute("open", "");
+  }
+  noteText.focus();
+}
+
+columnAddButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    openNoteDialog(button.dataset.column);
+  });
 });
+
+if (noteClose) {
+  noteClose.addEventListener("click", closeNoteDialog);
+}
+
+if (noteDialog) {
+  noteDialog.addEventListener("click", (event) => {
+    if (event.target === noteDialog) {
+      closeNoteDialog();
+    }
+  });
+}
+
+if (noteForm) {
+  noteForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (isReadOnly) {
+      return;
+    }
+    const text = noteText.value.trim();
+    const details = noteDetails.value.trim();
+    if (!text) {
+      noteText.focus();
+      return;
+    }
+    const didSend = sendMessage({
+      type: "addCard",
+      column: noteColumnInput.value,
+      text,
+      details
+    });
+    if (didSend) {
+      closeNoteDialog();
+    }
+  });
+}
 
 async function loadRetroMeta() {
   const response = await fetchWithAuth(

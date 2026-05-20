@@ -54,28 +54,6 @@
           </button>
         </section>
 
-        <section class="composer">
-          <form id="card-form">
-            <input
-              id="card-text"
-              type="text"
-              placeholder="Add a new note"
-              required
-            />
-            <textarea
-              id="card-details"
-              placeholder="Add details (optional)"
-              rows="2"
-            ></textarea>
-            <select id="card-column">
-              <option value="well">Start</option>
-              <option value="improve">Stop</option>
-              <option value="continue">Continue</option>
-            </select>
-            <button type="submit">Add note</button>
-          </form>
-        </section>
-
         <section class="board" id="board">
           <section class="column column-start" data-column="well">
             <header class="column-header">
@@ -89,6 +67,9 @@
               <span class="column-count" id="count-well">0</span>
             </header>
             <ul class="card-list" id="col-well"></ul>
+            <button type="button" class="column-add" data-column="well">
+              Create Note
+            </button>
           </section>
           <section class="column column-stop" data-column="improve">
             <header class="column-header">
@@ -102,6 +83,9 @@
               <span class="column-count" id="count-improve">0</span>
             </header>
             <ul class="card-list" id="col-improve"></ul>
+            <button type="button" class="column-add" data-column="improve">
+              Create Note
+            </button>
           </section>
           <section class="column column-continue" data-column="continue">
             <header class="column-header">
@@ -115,6 +99,9 @@
               <span class="column-count" id="count-continue">0</span>
             </header>
             <ul class="card-list" id="col-continue"></ul>
+            <button type="button" class="column-add" data-column="continue">
+              Create Note
+            </button>
           </section>
         </section>
       </section>
@@ -298,6 +285,58 @@
           </button>
         </div>
       </div>
+    </dialog>
+
+    <dialog class="action-dialog note-dialog" id="note-dialog">
+      <form id="note-form" method="dialog">
+        <header class="dialog-header note-dialog-header">
+          <div>
+            <h2>New note</h2>
+            <p>Adding to <span id="note-column-label">Start</span></p>
+          </div>
+          <div class="note-dialog-icons">
+            <button
+              type="submit"
+              class="icon-btn icon-btn-save"
+              id="note-save"
+              aria-label="Save note"
+              title="Save note"
+            >
+              ✓
+            </button>
+            <button
+              type="button"
+              class="icon-btn icon-btn-close"
+              id="note-close"
+              aria-label="Close"
+              title="Close"
+            >
+              ×
+            </button>
+          </div>
+        </header>
+        <input type="hidden" id="note-column" />
+        <label class="field">
+          <span>Add new note</span>
+          <input
+            id="note-text"
+            type="text"
+            maxlength="500"
+            placeholder="Short summary"
+            required
+          />
+        </label>
+        <label class="field">
+          <span>Add details</span>
+          <textarea
+            id="note-details"
+            class="note-details"
+            rows="3"
+            maxlength="2000"
+            placeholder="Add details (optional)"
+          ></textarea>
+        </label>
+      </form>
     </dialog>
 
     <script src="vendor/dragula/dragula.min.js"></script>

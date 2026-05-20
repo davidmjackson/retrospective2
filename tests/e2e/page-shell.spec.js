@@ -77,9 +77,11 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await page.getByRole("button", { name: "Create Retro" }).click();
   await expect(page).toHaveURL(/\/retrospective\?id=/);
   await expect(page.locator("#status")).toHaveText("Live");
-  await page.locator("#card-column").selectOption("continue");
-  await page.locator("#card-text").fill("Confirm action board styling");
-  await page.getByRole("button", { name: "Add note" }).click();
+  await page.locator(".column-continue .column-add").click();
+  await expect(page.locator("#note-dialog")).toBeVisible();
+  await page.locator("#note-text").fill("Confirm action board styling");
+  await page.locator("#note-save").click();
+  await expect(page.locator("#note-dialog")).toBeHidden();
   const continueCard = page
     .locator("#col-continue .card")
     .filter({ hasText: "Confirm action board styling" });
