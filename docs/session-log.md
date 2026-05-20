@@ -33,6 +33,43 @@ what changed, what was verified, decisions made, and the next useful options.
 - Decide whether to clear the moderate `ws` advisory with `npm audit fix`.
 - Review the modal copy and save/close icon affordance with users after a live session.
 
+## 2026-05-20 Codebase Review
+
+### Changed
+- Reviewed the application end to end (server, database layer, browser
+  scripts, tests, deployment config). No application code was changed.
+
+### Findings - open punch-list
+Dead / leftover code:
+- `server.js` `/api/login` builds its response with `createdKey` and
+  `createdTeam`, which are declared but never assigned, so the endpoint
+  always returns `teamKey: null, createdTeam: false`. The matching branch in
+  `login.js` is unreachable. Leftover from before team creation moved to
+  `/api/teams`.
+- `server.js` `saveState()` is defined but never called.
+- `lobby.js` posts a `team` field to `/api/retros` that the endpoint
+  ignores (the team is taken from the auth token).
+
+Security (new this review):
+- WebSocket messages have no per-connection rate limiting; a client can
+  flood `voteCard`/`addCard`, and per-card votes are uncapped to 100,000.
+- WebSocket auth is captured once at connect and never re-checked, so an
+  expired token keeps a live socket usable (low severity given the 24h TTL).
+
+Security (already tracked in the 2026-05-11 scans, still open):
+- Login rate limiting trusts the first `X-Forwarded-For` value.
+- 5-character team/admin keys are weak shared secrets.
+- Authenticated API responses lack `Cache-Control: no-store`.
+
+Housekeeping:
+- README "TODOs" are stale: the `index.html` consolidation is done,
+  API/WebSocket tests now exist, and card length limits are implemented.
+- `.vscode/extensions.json` is untracked - decide commit vs. gitignore.
+
+### Next
+- Triage the punch-list; the dead-code items are low-risk quick wins.
+- Trim the resolved entries out of the README "TODOs" section.
+
 ## 2026-05-15 Retrospective Instructions Modal
 
 ### Changed
