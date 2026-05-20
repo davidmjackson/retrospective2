@@ -3,6 +3,28 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 ws Security Advisory Fix
+
+### Changed
+- Created `fix/ws-security-advisory` from `main`.
+- Ran `npm audit fix`, bumping `ws` 8.18.3 -> 8.20.1 in `package-lock.json`
+  to clear advisory GHSA-58qx-3vcg-4xpx (moderate). The `package.json` range
+  `^8.17.1` already covered the patched version, so it was not changed.
+
+### Verified
+- `npm audit --omit=dev` — 0 vulnerabilities.
+- `node --check server.js`
+- `npm test`
+- `npm run test:e2e` (5 passed)
+
+### Notes
+- This branch was cut from `main`, which is behind the active feature
+  branches; the fix is intentionally isolated so it can merge on its own.
+
+### Next
+- Merge to `main` and deploy; restart the production app so the patched
+  `ws` runtime is in use.
+
 ## 2026-05-07 Restricted Team Creation
 
 ### Changed
