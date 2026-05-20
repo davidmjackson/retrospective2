@@ -77,9 +77,11 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await page.getByRole("button", { name: "Create Retro" }).click();
   await expect(page).toHaveURL(/\/retrospective\?id=/);
   await expect(page.locator("#status")).toHaveText("Live");
-  await page.locator("#card-column").selectOption("continue");
-  await page.locator("#card-text").fill("Confirm action board styling");
-  await page.getByRole("button", { name: "Add note" }).click();
+  await page.locator(".column-continue .column-add").click();
+  await expect(page.locator("#note-dialog")).toBeVisible();
+  await page.locator("#note-text").fill("Confirm action board styling");
+  await page.locator("#note-save").click();
+  await expect(page.locator("#note-dialog")).toBeHidden();
   const continueCard = page
     .locator("#col-continue .card")
     .filter({ hasText: "Confirm action board styling" });
@@ -88,7 +90,7 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator(".retro-health")).toContainText("Retro Health");
   await expect(page.locator("#stat-notes")).toHaveText("1");
   await expect(page.locator("#stat-actions")).toHaveText("0");
-  await expect(page.locator("#health-continue")).toHaveText("1");
+  await expect(page.locator("#count-continue")).toHaveText("1");
   await continueCard.getByRole("button", { name: /Create action/ }).click();
   await expect(page.locator("#action-dialog")).toBeVisible();
   await expect(page.locator("#action-title")).toHaveValue("Confirm action board styling");
@@ -101,12 +103,12 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(
     continueCard.getByRole("button", { name: /Action already created/ })
   ).toBeDisabled();
-  await expect(page.getByRole("link", { name: "View actions report" })).toHaveClass(
-    /primary-btn/
-  );
-  await expect(page.getByRole("link", { name: "Return to lobby" })).toHaveClass(
-    /secondary-btn/
-  );
+  await expect(
+    page.locator(".header-actions").getByRole("link", { name: "Actions" })
+  ).toHaveClass(/primary-btn/);
+  await expect(
+    page.locator(".header-actions").getByRole("link", { name: "Lobby" })
+  ).toHaveClass(/secondary-btn/);
 
   await page.goto("/actions");
   await expect(page.locator(".actions-summary")).toBeVisible();

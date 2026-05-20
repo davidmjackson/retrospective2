@@ -81,6 +81,18 @@ function openSocket(baseWsUrl, retroId, cookie) {
     const ws = new WebSocket(`${baseWsUrl}?retroId=${encodeURIComponent(retroId)}`, {
       headers: { Cookie: cookie }
     });
+    attachMessageBuffer(ws);
+    ws.once("open", () => resolve(ws));
+    ws.once("error", reject);
+  });
+}
+
+function openLobbySocket(baseWsUrl, cookie) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(`${baseWsUrl}?view=lobby`, {
+      headers: { Cookie: cookie }
+    });
+    attachMessageBuffer(ws);
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
   });
@@ -114,28 +126,54 @@ function openRejectedSocket(baseWsUrl, retroId, cookie, origin) {
 }
 
 function nextMessage(ws, predicate, label = "WebSocket message", timeoutMs = 3000) {
+  attachMessageBuffer(ws);
   return new Promise((resolve, reject) => {
-    const seen = [];
+    const bufferedIndex = ws.__messageBuffer.findIndex((message) => {
+      return !predicate || predicate(message);
+    });
+    if (bufferedIndex !== -1) {
+      const [message] = ws.__messageBuffer.splice(bufferedIndex, 1);
+      resolve(message);
+      return;
+    }
+
     const timeout = setTimeout(() => {
-      ws.off("message", handleMessage);
+      const waiterIndex = ws.__messageWaiters.indexOf(waiter);
+      if (waiterIndex !== -1) {
+        ws.__messageWaiters.splice(waiterIndex, 1);
+      }
       reject(
         new Error(
-          `Timed out waiting for ${label}. Seen: ${JSON.stringify(seen.slice(-5))}`
+          `Timed out waiting for ${label}. Seen: ${JSON.stringify(
+            ws.__messageBuffer.slice(-5)
+          )}`
         )
       );
     }, timeoutMs);
 
-    function handleMessage(raw) {
-      const message = JSON.parse(raw.toString());
-      seen.push(message);
-      if (!predicate || predicate(message)) {
-        clearTimeout(timeout);
-        ws.off("message", handleMessage);
-        resolve(message);
-      }
-    }
+    const waiter = { predicate, resolve, timeout };
+    ws.__messageWaiters.push(waiter);
+  });
+}
 
-    ws.on("message", handleMessage);
+function attachMessageBuffer(ws) {
+  if (ws.__messageBuffer) {
+    return;
+  }
+  ws.__messageBuffer = [];
+  ws.__messageWaiters = [];
+  ws.on("message", (raw) => {
+    const message = JSON.parse(raw.toString());
+    const waiterIndex = ws.__messageWaiters.findIndex((waiter) => {
+      return !waiter.predicate || waiter.predicate(message);
+    });
+    if (waiterIndex !== -1) {
+      const [waiter] = ws.__messageWaiters.splice(waiterIndex, 1);
+      clearTimeout(waiter.timeout);
+      waiter.resolve(message);
+      return;
+    }
+    ws.__messageBuffer.push(message);
   });
 }
 
@@ -180,6 +218,7 @@ async function main() {
   let child;
   let socket;
   let facilitatorSocket;
+  let lobbySocket;
 
   try {
     child = spawn(process.execPath, ["server.js"], {
@@ -357,6 +396,19 @@ async function main() {
     assert(
       participantRetros.body.retros.some((retro) => retro.id === retroId),
       "Participant could not see team retro."
+    );
+
+    lobbySocket = await openLobbySocket(baseWsUrl, participantLogin.cookie);
+    const initialLobbyRetros = await nextMessage(
+      lobbySocket,
+      (message) =>
+        message.type === "retros" &&
+        message.retros.some((retro) => retro.id === retroId && retro.closed === false),
+      "initial lobby retro list"
+    );
+    assert(
+      initialLobbyRetros.retros.some((retro) => retro.id === retroId),
+      "Lobby WebSocket did not include the team retro."
     );
 
     const otherTeamCreate = await request(
@@ -609,8 +661,15 @@ async function main() {
 
     const closeEvent = nextMessage(
       socket,
-      (message) => message.type === "retroClosed",
+      (message) => message.type === "retroClosed" && message.retro.closed === true,
       "retro closed event"
+    );
+    const lobbyCloseEvent = nextMessage(
+      lobbySocket,
+      (message) =>
+        message.type === "retros" &&
+        message.retros.some((retro) => retro.id === retroId && retro.closed === true),
+      "lobby retro closed update"
     );
     const closeRetro = await request(
       baseUrl,
@@ -619,7 +678,7 @@ async function main() {
       facilitatorLogin.cookie
     );
     assert(closeRetro.status === 200, "Facilitator could not close retro.");
-    await closeEvent;
+    await Promise.all([closeEvent, lobbyCloseEvent]);
 
     socket.send(
       JSON.stringify({
@@ -702,6 +761,7 @@ async function main() {
   } finally {
     closeSocket(socket);
     closeSocket(facilitatorSocket);
+    closeSocket(lobbySocket);
     if (child && child.exitCode === null && !child.killed) {
       child.kill();
       await new Promise((resolve) => child.once("exit", resolve));

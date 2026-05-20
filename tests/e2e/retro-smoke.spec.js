@@ -56,11 +56,23 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     const retroUrl = facilitator.url();
     await expect(facilitator.locator("#status")).toHaveText("Live");
     await expect(facilitator.locator("#retro-title")).toHaveText(retroTitle);
+    await facilitator.getByRole("button", { name: "Show instructions" }).click();
+    await expect(facilitator.locator("#instructions-dialog")).toBeVisible();
+    await expect(facilitator.locator("#instructions-dialog")).toContainText(
+      "How to run the retrospective"
+    );
+    await expect(facilitator.locator("#instructions-dialog")).toContainText(
+      "Use the board to gather notes, vote on priorities, and create follow-up actions."
+    );
+    await facilitator.getByRole("button", { name: "Got it" }).click();
+    await expect(facilitator.locator("#instructions-dialog")).toBeHidden();
 
-    await facilitator.locator("#card-column").selectOption("continue");
-    await facilitator.locator("#card-text").fill("Follow up on release checklist");
-    await facilitator.locator("#card-details").fill("Owner and due date needed");
-    await facilitator.getByRole("button", { name: "Add" }).click();
+    await facilitator.locator(".column-continue .column-add").click();
+    await expect(facilitator.locator("#note-dialog")).toBeVisible();
+    await facilitator.locator("#note-text").fill("Follow up on release checklist");
+    await facilitator.locator("#note-details").fill("Owner and due date needed");
+    await facilitator.locator("#note-save").click();
+    await expect(facilitator.locator("#note-dialog")).toBeHidden();
     const followUpCard = facilitator
       .locator("#col-continue .card")
       .filter({ hasText: "Follow up on release checklist" });
@@ -95,18 +107,26 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     });
     await participant.goto(retroUrl);
     await expect(participant.locator("#status")).toHaveText("Live");
-    await participant.locator("#card-column").selectOption("well");
-    await participant.locator("#card-text").fill("The demo flow is clear");
-    await participant.getByRole("button", { name: "Add" }).click();
+    await participant.locator(".column-start .column-add").click();
+    await expect(participant.locator("#note-dialog")).toBeVisible();
+    await participant.locator("#note-text").fill("The demo flow is clear");
+    await participant.locator("#note-save").click();
+    await expect(participant.locator("#note-dialog")).toBeHidden();
     const participantCard = participant
       .locator("#col-well .card")
       .filter({ hasText: "The demo flow is clear" });
     await expect(participantCard).toBeVisible();
-    await participantCard.getByRole("button", { name: "+1" }).click();
+    await participantCard.locator(".vote-btn").click();
     await expect(participantCard.locator(".vote-count")).toHaveText("1");
     await expect(
       facilitator.locator("#col-well .card").filter({ hasText: "The demo flow is clear" })
     ).toBeVisible();
+
+    await participant.goto("/lobby");
+    const participantRetroRow = participant
+      .locator(".retro-item")
+      .filter({ hasText: retroTitle });
+    await expect(participantRetroRow).toContainText("Status: Open");
 
     await facilitator.goto("/actions");
     await expect(facilitator.locator("#actions-count")).toHaveText("1 actions total");
@@ -122,11 +142,12 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
     await expect(retroRow).toContainText("Status: Open");
     await retroRow.getByRole("button", { name: "Close" }).click();
     await expect(retroRow).toContainText("Status: Closed");
+    await expect(participantRetroRow).toContainText("Status: Closed");
 
     await facilitator.goto(retroUrl);
     await expect(facilitator.locator("body")).toHaveClass(/read-only/);
     await expect(facilitator.locator("#retro-status")).toContainText("Closed");
-    await expect(facilitator.locator(".composer")).toBeHidden();
+    await expect(facilitator.locator(".column-add").first()).toBeHidden();
   } finally {
     await participantContext.close();
     await facilitatorContext.close();
