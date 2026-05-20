@@ -3,6 +3,29 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Production Deploy
+
+### Changed
+- Deployed `main` (commit `4f01e63`) to production at sprintretro.uk.
+- On the production host: backed up the live SQLite database, fast-forwarded
+  the checkout to `main`, reinstalled production dependencies with
+  `npm ci --omit=dev`, and restarted the `retrospective` service.
+
+### Verified
+- `npm ci` reported 0 vulnerabilities; patched `ws@8.20.1` is in place.
+- `/health` returned `{"status":"ok"}` after the restart.
+- Smoke-tested the live site (login, board, Create Note modal).
+
+### Notes
+- The production database is `retros.db` in the app directory; it was copied
+  up to `/var/www/` before the deploy.
+- `npm run db:migrate` was skipped - this release has no schema change and the
+  app re-checks the schema on startup.
+
+### Next
+- Delete the merged feature branches on GitHub when convenient.
+- Gather user feedback on the lighter board layout after a live retro.
+
 ## 2026-05-20 Release Merge to main
 
 ### Changed
