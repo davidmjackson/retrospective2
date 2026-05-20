@@ -21,6 +21,9 @@
       </div>
       <div class="header-actions">
         <div class="status" id="status">Connecting...</div>
+        <button type="button" class="secondary-btn" id="show-instructions">
+          Show instructions
+        </button>
         <a class="secondary-btn" href="/lobby">Lobby</a>
         <a class="primary-btn" href="/actions">Actions</a>
       </div>
@@ -49,8 +52,14 @@
 
         <section class="instruction-banner">
           <p>Add your thoughts to the board. Vote on items you agree with most.</p>
-          <button type="button" class="secondary-btn" id="show-instructions">
-            Show instructions
+          <button
+            type="button"
+            class="banner-dismiss"
+            id="instruction-banner-dismiss"
+            aria-label="Dismiss tip"
+            title="Dismiss"
+          >
+            ×
           </button>
         </section>
 
@@ -140,24 +149,6 @@
           <p class="health-status-detail" id="health-status-detail">
             Add notes in each column and gather votes.
           </p>
-          <div class="health-breakdown" aria-label="Column breakdown">
-            <div class="health-row">
-              <span>Start notes</span>
-              <strong id="health-start">0</strong>
-            </div>
-            <div class="health-row">
-              <span>Stop notes</span>
-              <strong id="health-stop">0</strong>
-            </div>
-            <div class="health-row">
-              <span>Continue notes</span>
-              <strong id="health-continue">0</strong>
-            </div>
-            <div class="health-row">
-              <span>Total votes</span>
-              <strong id="health-votes">0</strong>
-            </div>
-          </div>
           <div class="activity-card">
             <span>Latest activity</span>
             <strong id="activity">No recent activity</strong>
@@ -172,11 +163,6 @@
           <div class="participant-list" id="participant-list"></div>
         </section>
 
-        <section class="sidebar-panel sidebar-actions">
-          <h2>Actions</h2>
-          <a class="primary-btn" href="/actions">View actions report</a>
-          <a class="secondary-btn" href="/lobby">Return to lobby</a>
-        </section>
       </aside>
     </main>
 
@@ -186,6 +172,15 @@
       <p>Focus on behaviours, not people</p>
       <p>One conversation at a time</p>
       <a href="/lobby">Need help?</a>
+      <button
+        type="button"
+        class="tips-dismiss"
+        id="tips-dismiss"
+        aria-label="Dismiss tips"
+        title="Dismiss tips"
+      >
+        ×
+      </button>
     </footer>
 
     <dialog class="action-dialog" id="action-dialog">

@@ -35,17 +35,19 @@ const noteColumnInput = document.getElementById("note-column");
 const noteColumnLabel = document.getElementById("note-column-label");
 const noteClose = document.getElementById("note-close");
 const columnAddButtons = document.querySelectorAll(".column-add");
+const instructionBanner = document.querySelector(".instruction-banner");
+const instructionBannerDismiss = document.getElementById(
+  "instruction-banner-dismiss"
+);
+const tipsBar = document.querySelector(".tips-bar");
+const tipsDismiss = document.getElementById("tips-dismiss");
 const healthStats = {
   notes: document.getElementById("stat-notes"),
   votes: document.getElementById("stat-votes"),
   actions: document.getElementById("stat-actions"),
   online: document.getElementById("stat-online"),
   status: document.getElementById("health-status"),
-  statusDetail: document.getElementById("health-status-detail"),
-  start: document.getElementById("health-start"),
-  stop: document.getElementById("health-stop"),
-  continueNotes: document.getElementById("health-continue"),
-  healthVotes: document.getElementById("health-votes")
+  statusDetail: document.getElementById("health-status-detail")
 };
 const columns = {
   well: document.getElementById("col-well"),
@@ -167,10 +169,6 @@ function renderHealth(state) {
   setText(healthStats.votes, String(stats.totalVotes));
   setText(healthStats.actions, String(stats.actions));
   setText(healthStats.online, String(onlineUsers));
-  setText(healthStats.start, String(stats.counts.well));
-  setText(healthStats.stop, String(stats.counts.improve));
-  setText(healthStats.continueNotes, String(stats.counts.continue));
-  setText(healthStats.healthVotes, String(stats.totalVotes));
 
   if (healthStats.status) {
     healthStats.status.classList.toggle("is-ready", readyToDiscuss);
@@ -214,17 +212,9 @@ function renderState(state) {
       li.dataset.text = card.text;
       li.dataset.votes = String(card.votes || 0);
       li.dataset.details = card.details || "";
-      const menu = document.createElement("span");
-      menu.className = "card-menu";
-      menu.setAttribute("aria-hidden", "true");
-      menu.textContent = "⋮";
       const strong = document.createElement("strong");
       strong.textContent = card.text;
-      const header = document.createElement("div");
-      header.className = "card-main";
-      header.appendChild(strong);
-      header.appendChild(menu);
-      li.appendChild(header);
+      li.appendChild(strong);
       if (card.details) {
         const details = document.createElement("p");
         details.className = "card-details";
@@ -243,6 +233,7 @@ function renderState(state) {
       button.type = "button";
       button.className = "vote-btn";
       button.textContent = "+1";
+      button.setAttribute("aria-label", `Vote for ${card.text}`);
       const actionButton = document.createElement("button");
       actionButton.type = "button";
       actionButton.className = "create-action-btn";
@@ -572,6 +563,26 @@ if (instructionsDialog) {
     }
   });
 }
+
+function setupDismissible(element, dismissButton, storageKey) {
+  if (!element || !dismissButton) {
+    return;
+  }
+  if (localStorage.getItem(storageKey) === "1") {
+    element.hidden = true;
+  }
+  dismissButton.addEventListener("click", () => {
+    element.hidden = true;
+    localStorage.setItem(storageKey, "1");
+  });
+}
+
+setupDismissible(
+  instructionBanner,
+  instructionBannerDismiss,
+  "retroHideInstructionBanner"
+);
+setupDismissible(tipsBar, tipsDismiss, "retroHideTips");
 
 if (actionForm) {
   actionForm.addEventListener("submit", (event) => {

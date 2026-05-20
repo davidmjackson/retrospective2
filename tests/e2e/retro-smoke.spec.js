@@ -116,7 +116,7 @@ test("core retrospective workflow works in the browser", async ({ browser }) => 
       .locator("#col-well .card")
       .filter({ hasText: "The demo flow is clear" });
     await expect(participantCard).toBeVisible();
-    await participantCard.getByRole("button", { name: "+1" }).click();
+    await participantCard.locator(".vote-btn").click();
     await expect(participantCard.locator(".vote-count")).toHaveText("1");
     await expect(
       facilitator.locator("#col-well .card").filter({ hasText: "The demo flow is clear" })

@@ -3,6 +3,43 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Retrospective Design Refresh
+
+### Changed
+- Created `feature/retro-design-refresh` from `feature/note-composer-modal`.
+- Removed the decorative card "..." menu icon, which implied an action that
+  did nothing.
+- De-duplicated metrics: dropped the Retro Health breakdown rows (per-column
+  note counts and total votes) that duplicated the column badges and the top
+  health strip. The Retro Health panel now shows only the readiness signal
+  and latest activity.
+- Lightened the sidebar: removed the Actions panel (its links duplicate the
+  header) and moved the "Show instructions" button into the header.
+- Reduced column and card-list min-heights and added an empty-column
+  placeholder so a fresh board is no longer mostly whitespace.
+- Made the instruction banner and footer tips bar dismissible (persisted in
+  localStorage). Added a global `[hidden]` rule so the attribute reliably
+  hides elements that carry a `display` rule - this also fixes participant
+  timer controls, which previously stayed visible.
+- Added an accessible label to the card vote button.
+- Updated `retro-smoke` and `page-shell` e2e specs for the new structure.
+
+### Verified
+- `node --check` on `public/client.js` and both e2e specs.
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e` (5 passed)
+- Visual check of the refreshed board, empty state, and dismissible chrome.
+- `npm audit --omit=dev` still reports the moderate `ws` advisory on this
+  branch; the fix lives on `fix/ws-security-advisory` and is not merged here.
+
+### Decisions
+- Kept the card "..." menu removed rather than building a real menu; edit and
+  delete would need new server-side support and are a separate feature.
+
+### Next
+- Gather user feedback on the lighter layout after a live session.
+
 ## 2026-05-20 Note Composer Modal
 
 ### Changed
