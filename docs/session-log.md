@@ -3,6 +3,28 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Release Merge to main
+
+### Changed
+- Merged `fix/ws-security-advisory` and the `feature/retro-design-refresh`
+  chain (design refresh, note composer modal, retrospective instructions
+  modal, and earlier unmerged work) into `main`.
+- Resolved the `docs/session-log.md` merge conflict by keeping both same-day
+  entries; `package-lock.json` resolved to `ws@8.20.1`.
+
+### Verified (on merged `main`)
+- `node --check` on all tracked JS files.
+- `git diff --check`
+- `npm test`
+- `npm run test:e2e` (5 passed)
+- `npm audit --omit=dev` - 0 vulnerabilities.
+
+### Next
+- Deploy `main` to production (sprintretro.uk) with the Release Updates steps
+  in `docs/deployment.md`; back up the live SQLite database first, then
+  restart the app so the patched `ws` runtime and new features go live.
+- After deploy, smoke-test login, the Create Note modal, voting, and timer.
+
 ## 2026-05-20 Retrospective Design Refresh
 
 ### Changed
