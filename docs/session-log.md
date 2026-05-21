@@ -3,6 +3,27 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Key Rotation Production Deploy
+
+### Changed
+- Deployed `main` (commit `0d11c9f`) to production at sprintretro.uk.
+- On the production host: backed up the live database to
+  `/var/www/retros-pre-rotation.db`, fast-forwarded the checkout to `main`,
+  reinstalled dependencies, and restarted the `retrospective` service.
+- The teams-table migration ran on restart - existing plaintext keys were
+  hashed in place, so current keys keep working.
+
+### Verified
+- `/health` returned `{"status":"ok"}` after the restart.
+- Smoke-tested the live site: an existing team key still logs in, `/admin`
+  shows hashed-key status, and rotating a team key works through the reveal
+  dialog.
+
+### Next
+- Rotate any team still shown as "Weak key" in `/admin` and hand out the new
+  keys (old 5-character keys keep working until rotated).
+- Consider lengthening `RETRO_ADMIN_KEY` to 12+ characters.
+
 ## 2026-05-20 Team Access Key Rotation
 
 ### Changed
