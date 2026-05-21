@@ -3,6 +3,51 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Team Access Key Rotation
+
+### Changed
+- Created `feature/team-key-rotation` from `main`.
+- Ported Scrum Poker's access-key hardening and rotation to Retrospective
+  (see `docs/scrumpoker-key-rotation.md`):
+  - Team keys are stored only as salted SHA-256 hashes (`key_hash`,
+    `key_salt`) instead of a plaintext `join_key`; logins verify with a
+    timing-safe compare.
+  - Generated keys are now 12 characters; a `weak` flag marks any key shorter
+    than 12 (all migrated 5-character keys, and the admin key if short).
+  - Added `POST /api/admin/teams/:id/rotate` and a "Rotate key" admin action:
+    a confirm step, then a one-time reveal dialog with a Copy button. Only the
+    hash is stored, so the key cannot be retrieved after the dialog closes.
+  - The `/admin` team list no longer shows plaintext keys; it shows a key
+    status (OK / Weak key).
+  - `RETRO_ADMIN_KEY` now accepts 5-64 characters (was exactly 5) and logs a
+    warning if shorter than 12. The Admin team cannot be rotated from the
+    UI/API - its key is managed through `RETRO_ADMIN_KEY`.
+- Added a `teams` table migration that rebuilds the table and hashes each
+  existing plaintext key in place, so current keys keep working after deploy.
+- Updated the login key field, both e2e specs, and the WebSocket integration
+  test (now covers rotation: the old key stops working, the new key works).
+
+### Verified
+- `node --check` on all touched JS files; `git diff --check`.
+- Standalone migration check: a legacy plaintext-key database migrates to
+  hashed storage, old keys still verify, the weak flag is set correctly, and
+  rotation invalidates the old key while preserving the team's createdAt.
+- `npm test`, `npm run test:e2e` (5 passed), `npm audit --omit=dev`
+  (0 vulnerabilities), `db:migrate` / `db:vacuum` on a temp database.
+- Visual check of the admin rotation flow and the reveal dialog.
+
+### Decisions
+- Rotation blocks future logins with the old key. Existing signed-in sessions
+  keep their `retro_auth` cookie until it expires (24h default); forced
+  session invalidation was out of scope.
+- No rotation audit log was added (deferred by choice).
+
+### Next
+- Deploy to production: back up `retros.db`, deploy `main`, restart the app
+  (the migration runs automatically on startup). Then rotate any team shown
+  as weak in `/admin`.
+- Consider lengthening `RETRO_ADMIN_KEY` to 12+ characters in production.
+
 ## 2026-05-20 Production Deploy
 
 ### Changed

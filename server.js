@@ -18,6 +18,8 @@ const {
   applyRetention,
   getTeamByName,
   createTeam,
+  rotateTeamKey,
+  verifyTeamKey,
   ensureAdminTeam,
   listTeams,
   deleteTeamById,
@@ -215,9 +217,15 @@ if (isProduction && (!process.env.RETRO_ADMIN_KEY || adminKey === "admin")) {
   process.exit(1);
 }
 
-if (!/^[a-z0-9]{5}$/.test(adminKey)) {
-  console.error("RETRO_ADMIN_KEY must be 5 lowercase letters or digits.");
+if (!/^[a-z0-9]{5,64}$/.test(adminKey)) {
+  console.error("RETRO_ADMIN_KEY must be 5-64 lowercase letters or digits.");
   process.exit(1);
+}
+
+if (adminKey.length < 12) {
+  console.warn(
+    "RETRO_ADMIN_KEY is shorter than 12 characters; a longer key is recommended."
+  );
 }
 
 if (!process.env.RETRO_AUTH_SECRET) {
@@ -1038,12 +1046,12 @@ app.post("/api/login", (req, res) => {
     rejectLogin(res, rateLimitKey, 403, "Admin team is restricted.");
     return;
   }
-  if (safeKey && !/^[a-z0-9]{5}$/.test(safeKey)) {
+  if (safeKey && !/^[a-z0-9]{4,64}$/.test(safeKey)) {
     rejectLogin(
       res,
       rateLimitKey,
       400,
-      "Team key must be 5 lowercase letters or digits."
+      "Team key must be lowercase letters or digits."
     );
     return;
   }
@@ -1061,7 +1069,7 @@ app.post("/api/login", (req, res) => {
       rejectLogin(res, rateLimitKey, 404, "Admin team not found.");
       return;
     }
-    if (!safeKey || safeKey !== teamRecord.join_key) {
+    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
       rejectLogin(res, rateLimitKey, 403, "Invalid admin key.");
       return;
     }
@@ -1070,7 +1078,7 @@ app.post("/api/login", (req, res) => {
       rejectLogin(res, rateLimitKey, 404, "Team not found.");
       return;
     }
-    if (!safeKey || safeKey !== teamRecord.join_key) {
+    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
       rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
       return;
     }
@@ -1083,7 +1091,7 @@ app.post("/api/login", (req, res) => {
       rejectLogin(res, rateLimitKey, 404, "Team not found.");
       return;
     }
-    if (!safeKey || safeKey !== teamRecord.join_key) {
+    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
       rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
       return;
     }
@@ -1215,6 +1223,39 @@ app.delete("/api/admin/teams/:id", (req, res) => {
     (retro) => (retro.team || "").toLowerCase() !== team.name.toLowerCase()
   );
   res.json({ ok: true });
+});
+
+app.post("/api/admin/teams/:id/rotate", (req, res) => {
+  const auth = requireAuth(req, res);
+  if (!auth) {
+    return;
+  }
+  if (auth.role !== "admin") {
+    res.status(403).json({ error: "Admin role required." });
+    return;
+  }
+  const team = getTeamById(db, req.params.id);
+  if (!team) {
+    res.status(404).json({ error: "Team not found." });
+    return;
+  }
+  if (team.name.toLowerCase() === "admin") {
+    res.status(403).json({
+      error:
+        "The Admin key is managed through RETRO_ADMIN_KEY and cannot be rotated here."
+    });
+    return;
+  }
+  try {
+    const rotated = rotateTeamKey(db, team.id);
+    if (!rotated) {
+      res.status(404).json({ error: "Team not found." });
+      return;
+    }
+    res.json({ team: rotated.name, teamKey: rotated.joinKey });
+  } catch (err) {
+    res.status(500).json({ error: "Unable to rotate team key." });
+  }
 });
 
 app.get("/api/retros", (req, res) => {

@@ -2,6 +2,12 @@ const adminSummary = document.getElementById("admin-summary");
 const logoutBtn = document.getElementById("logout-btn");
 const teamTableBody = document.getElementById("team-table-body");
 const teamCount = document.getElementById("team-count");
+const keyRevealDialog = document.getElementById("key-reveal-dialog");
+const keyRevealTeam = document.getElementById("key-reveal-team");
+const keyRevealValue = document.getElementById("key-reveal-value");
+const keyRevealCopy = document.getElementById("key-reveal-copy");
+const keyRevealClose = document.getElementById("key-reveal-close");
+const keyRevealDone = document.getElementById("key-reveal-done");
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
@@ -40,6 +46,54 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
+function closeKeyReveal() {
+  if (keyRevealDialog && keyRevealDialog.open) {
+    keyRevealDialog.close();
+  }
+  if (keyRevealValue) {
+    keyRevealValue.textContent = "";
+  }
+}
+
+function showKeyReveal(teamName, key) {
+  if (!keyRevealDialog || !keyRevealValue) {
+    return;
+  }
+  if (keyRevealTeam) {
+    keyRevealTeam.textContent = teamName;
+  }
+  keyRevealValue.textContent = key;
+  if (keyRevealCopy) {
+    keyRevealCopy.textContent = "Copy";
+  }
+  if (typeof keyRevealDialog.showModal === "function") {
+    keyRevealDialog.showModal();
+  } else {
+    keyRevealDialog.setAttribute("open", "");
+  }
+}
+
+async function rotateTeam(team) {
+  const confirmed = window.confirm(
+    `Rotate the key for ${team.name}? The current key stops working immediately and cannot be recovered.`
+  );
+  if (!confirmed) {
+    return;
+  }
+  const response = await fetchWithAuth(`/api/admin/teams/${team.id}/rotate`, {
+    method: "POST"
+  });
+  if (!response || !response.ok) {
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!data.teamKey) {
+    return;
+  }
+  showKeyReveal(data.team || team.name, data.teamKey);
+  await loadTeams();
+}
+
 function renderTeams(teams) {
   teamTableBody.innerHTML = "";
   if (!teams.length) {
@@ -52,44 +106,41 @@ function renderTeams(teams) {
     return;
   }
   teams.forEach((team) => {
+    const isAdminTeam = team.name.toLowerCase() === "admin";
     const row = document.createElement("tr");
 
     const nameCell = document.createElement("td");
     nameCell.textContent = team.name;
 
-    const keyCell = document.createElement("td");
-    const keyBadge = document.createElement("span");
-    keyBadge.className = "key-badge";
-    keyBadge.textContent = team.join_key;
-    keyCell.appendChild(keyBadge);
+    const statusCell = document.createElement("td");
+    const statusBadge = document.createElement("span");
+    statusBadge.className = team.weak ? "pill closed" : "pill open";
+    statusBadge.textContent = team.weak ? "Weak key" : "OK";
+    statusCell.appendChild(statusBadge);
 
     const createdCell = document.createElement("td");
     createdCell.textContent = formatDate(team.created_at);
 
     const actionsCell = document.createElement("td");
     actionsCell.className = "action-buttons";
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "secondary-btn";
-    copyBtn.textContent = "Copy";
-    copyBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(team.join_key);
-        copyBtn.textContent = "Copied";
-        setTimeout(() => {
-          copyBtn.textContent = "Copy";
-        }, 1500);
-      } catch (err) {
-        copyBtn.textContent = "Copy";
-      }
-    });
-    actionsCell.appendChild(copyBtn);
+
+    const rotateBtn = document.createElement("button");
+    rotateBtn.type = "button";
+    rotateBtn.className = "secondary-btn";
+    rotateBtn.textContent = "Rotate key";
+    rotateBtn.disabled = isAdminTeam;
+    if (isAdminTeam) {
+      rotateBtn.title = "The Admin key is set with RETRO_ADMIN_KEY.";
+    } else {
+      rotateBtn.addEventListener("click", () => rotateTeam(team));
+    }
+    actionsCell.appendChild(rotateBtn);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "link-btn";
     deleteBtn.textContent = "Delete";
-    deleteBtn.disabled = team.name.toLowerCase() === "admin";
+    deleteBtn.disabled = isAdminTeam;
     deleteBtn.addEventListener("click", async () => {
       if (deleteBtn.disabled) {
         return;
@@ -103,10 +154,7 @@ function renderTeams(teams) {
       const response = await fetchWithAuth(`/api/admin/teams/${team.id}`, {
         method: "DELETE"
       });
-      if (!response) {
-        return;
-      }
-      if (!response.ok) {
+      if (!response || !response.ok) {
         return;
       }
       await loadTeams();
@@ -114,10 +162,44 @@ function renderTeams(teams) {
     actionsCell.appendChild(deleteBtn);
 
     row.appendChild(nameCell);
-    row.appendChild(keyCell);
+    row.appendChild(statusCell);
     row.appendChild(createdCell);
     row.appendChild(actionsCell);
     teamTableBody.appendChild(row);
+  });
+}
+
+if (keyRevealClose) {
+  keyRevealClose.addEventListener("click", closeKeyReveal);
+}
+
+if (keyRevealDone) {
+  keyRevealDone.addEventListener("click", closeKeyReveal);
+}
+
+if (keyRevealDialog) {
+  keyRevealDialog.addEventListener("click", (event) => {
+    if (event.target === keyRevealDialog) {
+      closeKeyReveal();
+    }
+  });
+}
+
+if (keyRevealCopy) {
+  keyRevealCopy.addEventListener("click", async () => {
+    const value = keyRevealValue ? keyRevealValue.textContent.trim() : "";
+    if (!value) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      keyRevealCopy.textContent = "Copied";
+      setTimeout(() => {
+        keyRevealCopy.textContent = "Copy";
+      }, 1500);
+    } catch (err) {
+      keyRevealCopy.textContent = "Copy";
+    }
   });
 }
 

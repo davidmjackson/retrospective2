@@ -69,7 +69,7 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await page.getByRole("button", { name: "Create Team Key" }).click();
   await expect(page.locator("#team-key-panel")).toBeVisible();
   await expect(page.locator("#team-key-team")).toHaveText(createdTeamName);
-  await expect(page.locator("#team-key-value")).toHaveText(/^[a-z0-9]{5}$/);
+  await expect(page.locator("#team-key-value")).toHaveText(/^[a-z0-9]{12}$/);
   await page.locator("#team-key-dismiss").click();
   await expect(page.locator("#team-key-panel")).toBeHidden();
 
@@ -139,7 +139,11 @@ test("lobby and actions pages use the redesigned dashboard shell", async ({ page
   await expect(page.locator(".retro-item").filter({ hasText: retroTitle })).toBeVisible();
 });
 
-test("admin page renders the team-key management shell", async ({ page }) => {
+test("admin page rotates a team key through the reveal dialog", async ({ page }) => {
+  const suffix = Date.now().toString(36);
+  const rotateTeam = `Rotate Team ${suffix}`;
+  await createTeamViaAdmin(page, rotateTeam);
+
   await login(page, {
     name: "Admin",
     role: "admin",
@@ -152,6 +156,14 @@ test("admin page renders the team-key management shell", async ({ page }) => {
   await expect(page.locator(".team-table")).toBeVisible();
   await expect(page.locator("#team-count")).toContainText("teams");
   await expect(page.locator("#team-table-body")).toContainText("Admin");
+
+  page.on("dialog", (dialog) => dialog.accept());
+  const teamRow = page.locator("#team-table-body tr", { hasText: rotateTeam });
+  await teamRow.getByRole("button", { name: "Rotate key" }).click();
+  await expect(page.locator("#key-reveal-dialog")).toBeVisible();
+  await expect(page.locator("#key-reveal-value")).toHaveText(/^[a-z0-9]{12}$/);
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.locator("#key-reveal-dialog")).toBeHidden();
 });
 
 test("mobile retrospective timer controls remain compact", async ({ page }) => {

@@ -20,7 +20,7 @@
 
     <main class="page-content">
       <section class="instruction-banner admin-summary">
-        <p>Manage generated team keys and remove teams that should no longer access retrospectives.</p>
+        <p>Rotate a team's access key when it leaks or looks weak, and remove teams that no longer need access.</p>
         <a class="secondary-btn" href="/lobby">Lobby</a>
       </section>
       <section class="panel">
@@ -33,7 +33,7 @@
             <thead>
               <tr>
                 <th>Team</th>
-                <th>Key</th>
+                <th>Key status</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -43,6 +43,40 @@
         </div>
       </section>
     </main>
+
+    <dialog class="action-dialog key-reveal-dialog" id="key-reveal-dialog">
+      <div class="key-reveal-content">
+        <header class="dialog-header">
+          <div>
+            <h2>New team key</h2>
+            <p>
+              Copy this key now and share it with the team. It is shown only
+              once and cannot be retrieved later.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="dialog-close"
+            id="key-reveal-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+        <p class="key-reveal-team">Team: <strong id="key-reveal-team"></strong></p>
+        <div class="key-reveal-value-row">
+          <code class="key-reveal-value" id="key-reveal-value"></code>
+          <button type="button" class="secondary-btn" id="key-reveal-copy">
+            Copy
+          </button>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="primary-btn" id="key-reveal-done">
+            Done
+          </button>
+        </div>
+      </div>
+    </dialog>
 
     <script src="admin.js"></script>
   </body>

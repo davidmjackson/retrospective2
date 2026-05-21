@@ -55,16 +55,16 @@
             <input
               id="login-key"
               type="text"
-              minlength="5"
-              maxlength="5"
-              pattern="[a-z0-9]{5}"
+              minlength="4"
+              maxlength="64"
+              pattern="[a-z0-9]{4,64}"
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="e.g. a1b2c"
+              placeholder="e.g. a1b2c3d4e5f6"
               required
             />
-            <small class="field-hint">5 lowercase letters or digits.</small>
+            <small class="field-hint">Lowercase letters and digits.</small>
           </label>
           <p id="login-error" class="error-text" role="alert"></p>
           <button type="submit" class="primary-btn">Enter Lobby</button>

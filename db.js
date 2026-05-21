@@ -84,19 +84,98 @@ function createTeamsSchema(db) {
   db.exec(`CREATE TABLE IF NOT EXISTS teams (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    join_key TEXT NOT NULL UNIQUE,
+    key_hash TEXT NOT NULL,
+    key_salt TEXT NOT NULL,
+    weak INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_teams_name ON teams(name)");
 }
 
+function ensureTeamsKeyHashing(db) {
+  const columns = db.prepare("PRAGMA table_info(teams)").all();
+  if (!columns.length) {
+    return;
+  }
+  const hasJoinKey = columns.some((column) => column.name === "join_key");
+  const hasKeyHash = columns.some((column) => column.name === "key_hash");
+  if (!hasJoinKey || hasKeyHash) {
+    return;
+  }
+  const legacyRows = db
+    .prepare("SELECT id, name, join_key, created_at FROM teams")
+    .all();
+  const migrate = db.transaction(() => {
+    db.exec(`CREATE TABLE teams_hashed (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      key_hash TEXT NOT NULL,
+      key_salt TEXT NOT NULL,
+      weak INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    )`);
+    const insert = db.prepare(
+      `INSERT INTO teams_hashed (id, name, key_hash, key_salt, weak, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    legacyRows.forEach((row) => {
+      const key = typeof row.join_key === "string" ? row.join_key : "";
+      const salt = createKeySalt();
+      insert.run(
+        row.id,
+        row.name,
+        hashTeamKey(key, salt),
+        salt,
+        isWeakTeamKey(key) ? 1 : 0,
+        row.created_at
+      );
+    });
+    db.exec("DROP TABLE teams");
+    db.exec("ALTER TABLE teams_hashed RENAME TO teams");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_teams_name ON teams(name)");
+  });
+  migrate();
+}
+
+const TEAM_KEY_LENGTH = 12;
+const TEAM_KEY_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
 function generateTeamKey() {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let key = "";
-  for (let i = 0; i < 5; i += 1) {
-    key += chars[crypto.randomInt(chars.length)];
+  for (let i = 0; i < TEAM_KEY_LENGTH; i += 1) {
+    key += TEAM_KEY_CHARS[crypto.randomInt(TEAM_KEY_CHARS.length)];
   }
   return key;
+}
+
+function createKeySalt() {
+  return crypto.randomBytes(16).toString("hex");
+}
+
+function hashTeamKey(key, salt) {
+  return crypto
+    .createHash("sha256")
+    .update(`${salt}:${key}`)
+    .digest("hex");
+}
+
+function isWeakTeamKey(key) {
+  return typeof key !== "string" || key.length < TEAM_KEY_LENGTH;
+}
+
+function verifyTeamKey(team, key) {
+  if (!team || !team.key_hash || !team.key_salt) {
+    return false;
+  }
+  if (typeof key !== "string" || !key) {
+    return false;
+  }
+  const expected = Buffer.from(team.key_hash, "hex");
+  const actual = Buffer.from(hashTeamKey(key, team.key_salt), "hex");
+  if (expected.length === 0 || expected.length !== actual.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expected, actual);
 }
 
 function getTeamByName(db, name) {
@@ -105,7 +184,9 @@ function getTeamByName(db, name) {
     return null;
   }
   return db
-    .prepare("SELECT id, name, join_key FROM teams WHERE name = ? COLLATE NOCASE")
+    .prepare(
+      "SELECT id, name, key_hash, key_salt, weak, created_at FROM teams WHERE name = ? COLLATE NOCASE"
+    )
     .get(safeName);
 }
 
@@ -114,7 +195,11 @@ function getTeamById(db, teamId) {
   if (!Number.isFinite(id)) {
     return null;
   }
-  return db.prepare("SELECT id, name, join_key FROM teams WHERE id = ?").get(id);
+  return db
+    .prepare(
+      "SELECT id, name, key_hash, key_salt, weak, created_at FROM teams WHERE id = ?"
+    )
+    .get(id);
 }
 
 function createTeam(db, name) {
@@ -122,35 +207,36 @@ function createTeam(db, name) {
   if (!safeName) {
     throw new Error("Team name is required.");
   }
-  const insert = db.prepare(
-    "INSERT INTO teams (name, join_key, created_at) VALUES (?, ?, ?)"
-  );
+  const key = generateTeamKey();
+  const salt = createKeySalt();
   const now = new Date().toISOString();
-  let lastError = null;
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const key = generateTeamKey();
-    try {
-      insert.run(safeName, key, now);
-      return { name: safeName, joinKey: key };
-    } catch (err) {
-      lastError = err;
-      if (err && err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-        if (String(err.message || "").includes("teams.name")) {
-          const exists = new Error("Team already exists.");
-          exists.code = "TEAM_EXISTS";
-          throw exists;
-        }
-        continue;
-      }
-      throw err;
+  try {
+    db.prepare(
+      `INSERT INTO teams (name, key_hash, key_salt, weak, created_at)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(safeName, hashTeamKey(key, salt), salt, isWeakTeamKey(key) ? 1 : 0, now);
+  } catch (err) {
+    if (err && err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      const exists = new Error("Team already exists.");
+      exists.code = "TEAM_EXISTS";
+      throw exists;
     }
+    throw err;
   }
-  if (lastError) {
-    throw lastError;
+  return { name: safeName, joinKey: key, weak: isWeakTeamKey(key) };
+}
+
+function rotateTeamKey(db, teamId) {
+  const team = getTeamById(db, teamId);
+  if (!team) {
+    return null;
   }
-  const failure = new Error("Unable to generate a unique team key.");
-  failure.code = "KEY_GENERATION_FAILED";
-  throw failure;
+  const key = generateTeamKey();
+  const salt = createKeySalt();
+  db.prepare(
+    "UPDATE teams SET key_hash = ?, key_salt = ?, weak = ? WHERE id = ?"
+  ).run(hashTeamKey(key, salt), salt, isWeakTeamKey(key) ? 1 : 0, team.id);
+  return { id: team.id, name: team.name, joinKey: key };
 }
 
 function backfillTeamsFromRetros(db) {
@@ -177,28 +263,31 @@ function backfillTeamsFromRetros(db) {
 
 function ensureAdminTeam(db, adminKey) {
   const safeKey = typeof adminKey === "string" ? adminKey.trim().toLowerCase() : "";
-  if (!safeKey || !/^[a-z0-9]{5}$/.test(safeKey)) {
-    throw new Error("Admin key must be 5 lowercase letters or digits.");
+  if (!safeKey || !/^[a-z0-9]{5,64}$/.test(safeKey)) {
+    throw new Error("Admin key must be 5-64 lowercase letters or digits.");
   }
+  const salt = createKeySalt();
+  const hash = hashTeamKey(safeKey, salt);
+  const weak = isWeakTeamKey(safeKey) ? 1 : 0;
   const existing = getTeamByName(db, "Admin");
   if (!existing) {
-    const insert = db.prepare(
-      "INSERT INTO teams (name, join_key, created_at) VALUES (?, ?, ?)"
-    );
-    insert.run("Admin", safeKey, new Date().toISOString());
-    return { name: "Admin", joinKey: safeKey, created: true };
+    db.prepare(
+      `INSERT INTO teams (name, key_hash, key_salt, weak, created_at)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run("Admin", hash, salt, weak, new Date().toISOString());
+    return { name: "Admin", created: true };
   }
-  if (existing.join_key !== safeKey) {
-    const update = db.prepare("UPDATE teams SET join_key = ? WHERE id = ?");
-    update.run(safeKey, existing.id);
-    return { name: "Admin", joinKey: safeKey, updated: true };
-  }
-  return { name: "Admin", joinKey: safeKey, updated: false };
+  db.prepare(
+    "UPDATE teams SET key_hash = ?, key_salt = ?, weak = ? WHERE id = ?"
+  ).run(hash, salt, weak, existing.id);
+  return { name: "Admin", updated: true };
 }
 
 function listTeams(db) {
   return db
-    .prepare("SELECT id, name, join_key, created_at FROM teams ORDER BY name COLLATE NOCASE")
+    .prepare(
+      "SELECT id, name, weak, created_at FROM teams ORDER BY name COLLATE NOCASE"
+    )
     .all();
 }
 
@@ -692,6 +781,7 @@ function ensureSchema(db, callback) {
       createNormalizedSchema(db, { retros: "retros", cards: "cards" });
       ensureCardCreatedByColumn(db);
       createTeamsSchema(db);
+      ensureTeamsKeyHashing(db);
       backfillTeamsFromRetros(db);
       if (version < 5) {
         db.exec(
@@ -712,6 +802,7 @@ function ensureSchema(db, callback) {
           return;
         }
         createTeamsSchema(db);
+        ensureTeamsKeyHashing(db);
         backfillTeamsFromRetros(db);
         db.exec(
           "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
@@ -723,6 +814,7 @@ function ensureSchema(db, callback) {
     createNormalizedSchema(db, { retros: "retros", cards: "cards" });
     ensureCardCreatedByColumn(db);
     createTeamsSchema(db);
+    ensureTeamsKeyHashing(db);
     backfillTeamsFromRetros(db);
     db.exec(
       "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
@@ -907,6 +999,8 @@ module.exports = {
   getTeamByName,
   getTeamById,
   createTeam,
+  rotateTeamKey,
+  verifyTeamKey,
   backfillTeamsFromRetros,
   ensureAdminTeam,
   listTeams,

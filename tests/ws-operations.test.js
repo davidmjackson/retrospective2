@@ -444,6 +444,79 @@ async function main() {
     );
     assert(crossTeamRetro.status === 404, "Cross-team retro access was not blocked.");
 
+    const adminTeams = await request(
+      baseUrl,
+      "/api/admin/teams",
+      {},
+      adminLogin.cookie
+    );
+    assert(adminTeams.status === 200, "Admin could not list teams.");
+    const otherTeamRecord = adminTeams.body.teams.find(
+      (team) => team.name === "Other Team"
+    );
+    assert(otherTeamRecord, "Admin team list did not include Other Team.");
+    assert(
+      !("join_key" in otherTeamRecord) && !("key_hash" in otherTeamRecord),
+      "Admin team list exposed team key material."
+    );
+
+    const rotate = await request(
+      baseUrl,
+      `/api/admin/teams/${otherTeamRecord.id}/rotate`,
+      { method: "POST" },
+      adminLogin.cookie
+    );
+    assert(rotate.status === 200, "Key rotation request failed.");
+    assert(
+      typeof rotate.body.teamKey === "string" &&
+        /^[a-z0-9]{12}$/.test(rotate.body.teamKey),
+      "Rotation did not return a fresh 12-character key."
+    );
+    assert(
+      rotate.body.teamKey !== otherTeamCreate.body.teamKey,
+      "Rotation returned the previous key."
+    );
+
+    const staleKeyLogin = await request(baseUrl, "/api/login", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Stale Key User",
+        role: "facilitator",
+        team: "Other Team",
+        key: otherTeamCreate.body.teamKey
+      })
+    });
+    assert(
+      staleKeyLogin.status === 403,
+      "The previous key still worked after rotation."
+    );
+
+    const rotatedKeyLogin = await request(baseUrl, "/api/login", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Rotated Key User",
+        role: "facilitator",
+        team: "Other Team",
+        key: rotate.body.teamKey
+      })
+    });
+    assert(rotatedKeyLogin.status === 200, "The rotated key did not work.");
+
+    const adminTeamRecord = adminTeams.body.teams.find(
+      (team) => team.name === "Admin"
+    );
+    assert(adminTeamRecord, "Admin team was not listed.");
+    const adminRotate = await request(
+      baseUrl,
+      `/api/admin/teams/${adminTeamRecord.id}/rotate`,
+      { method: "POST" },
+      adminLogin.cookie
+    );
+    assert(
+      adminRotate.status === 403,
+      "The Admin team key should not be rotatable through the API."
+    );
+
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const failedLogin = await request(baseUrl, "/api/login", {
         method: "POST",
