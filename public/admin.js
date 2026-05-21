@@ -8,6 +8,12 @@ const keyRevealValue = document.getElementById("key-reveal-value");
 const keyRevealCopy = document.getElementById("key-reveal-copy");
 const keyRevealClose = document.getElementById("key-reveal-close");
 const keyRevealDone = document.getElementById("key-reveal-done");
+const confirmDialog = document.getElementById("confirm-dialog");
+const confirmTitle = document.getElementById("confirm-title");
+const confirmMessage = document.getElementById("confirm-message");
+const confirmAccept = document.getElementById("confirm-accept");
+const confirmCancel = document.getElementById("confirm-cancel");
+const confirmClose = document.getElementById("confirm-close");
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
@@ -74,9 +80,11 @@ function showKeyReveal(teamName, key) {
 }
 
 async function rotateTeam(team) {
-  const confirmed = window.confirm(
-    `Rotate the key for ${team.name}? The current key stops working immediately and cannot be recovered.`
-  );
+  const confirmed = await confirmAction({
+    title: "Rotate team key",
+    message: `Rotate the key for ${team.name}? The current key stops working immediately and cannot be recovered.`,
+    confirmLabel: "Rotate key"
+  });
   if (!confirmed) {
     return;
   }
@@ -145,9 +153,11 @@ function renderTeams(teams) {
       if (deleteBtn.disabled) {
         return;
       }
-      const confirmed = window.confirm(
-        `Delete team ${team.name}? This removes the team and its retros.`
-      );
+      const confirmed = await confirmAction({
+        title: "Delete team",
+        message: `Delete team ${team.name}? This removes the team and its retros.`,
+        confirmLabel: "Delete team"
+      });
       if (!confirmed) {
         return;
       }
@@ -200,6 +210,66 @@ if (keyRevealCopy) {
     } catch (err) {
       keyRevealCopy.textContent = "Copy";
     }
+  });
+}
+
+let confirmResolver = null;
+
+function settleConfirm(result) {
+  if (confirmDialog && confirmDialog.open) {
+    confirmDialog.close();
+  }
+  if (confirmResolver) {
+    const resolve = confirmResolver;
+    confirmResolver = null;
+    resolve(result);
+  }
+}
+
+function confirmAction({ title, message, confirmLabel }) {
+  if (!confirmDialog || !confirmAccept) {
+    return Promise.resolve(window.confirm(message || ""));
+  }
+  settleConfirm(false);
+  return new Promise((resolve) => {
+    confirmResolver = resolve;
+    if (confirmTitle) {
+      confirmTitle.textContent = title || "Confirm";
+    }
+    if (confirmMessage) {
+      confirmMessage.textContent = message || "";
+    }
+    confirmAccept.textContent = confirmLabel || "Confirm";
+    if (typeof confirmDialog.showModal === "function") {
+      confirmDialog.showModal();
+    } else {
+      confirmDialog.setAttribute("open", "");
+    }
+    confirmAccept.focus();
+  });
+}
+
+if (confirmAccept) {
+  confirmAccept.addEventListener("click", () => settleConfirm(true));
+}
+
+if (confirmCancel) {
+  confirmCancel.addEventListener("click", () => settleConfirm(false));
+}
+
+if (confirmClose) {
+  confirmClose.addEventListener("click", () => settleConfirm(false));
+}
+
+if (confirmDialog) {
+  confirmDialog.addEventListener("click", (event) => {
+    if (event.target === confirmDialog) {
+      settleConfirm(false);
+    }
+  });
+  confirmDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    settleConfirm(false);
   });
 }
 

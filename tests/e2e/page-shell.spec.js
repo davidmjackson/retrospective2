@@ -157,9 +157,10 @@ test("admin page rotates a team key through the reveal dialog", async ({ page })
   await expect(page.locator("#team-count")).toContainText("teams");
   await expect(page.locator("#team-table-body")).toContainText("Admin");
 
-  page.on("dialog", (dialog) => dialog.accept());
   const teamRow = page.locator("#team-table-body tr", { hasText: rotateTeam });
   await teamRow.getByRole("button", { name: "Rotate key" }).click();
+  await expect(page.locator("#confirm-dialog")).toBeVisible();
+  await page.locator("#confirm-accept").click();
   await expect(page.locator("#key-reveal-dialog")).toBeVisible();
   await expect(page.locator("#key-reveal-value")).toHaveText(/^[a-z0-9]{12}$/);
   await page.getByRole("button", { name: "Done" }).click();
