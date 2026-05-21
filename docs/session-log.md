@@ -3,6 +3,20 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Remove Dead Admin Lobby Button
+
+### Changed
+- Created `fix/admin-lobby-button` from `main`.
+- Removed the "Lobby" link from the `/admin` page. `lobby.js` redirects any
+  admin straight back to `/admin`, so the button bounced back instead of
+  opening the lobby - admins have no lobby workflow.
+
+### Verified
+- `git diff --check`; `npm run test:e2e` (5 passed).
+
+### Next
+- Deploy with the next release - front-end only, no schema or server change.
+
 ## 2026-05-20 Key Warning and Confirm Modal Deploy
 
 ### Changed
