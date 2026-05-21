@@ -14,8 +14,9 @@ what changed, what was verified, decisions made, and the next useful options.
 ### Verified
 - `git diff --check`; `npm run test:e2e` (5 passed).
 
-### Next
-- Deploy with the next release - front-end only, no schema or server change.
+### Deployed
+- Deployed to production at sprintretro.uk on 2026-05-20 (`main` 5d6c6da);
+  smoke-tested that the admin "Lobby" button is gone.
 
 ## 2026-05-20 Key Warning and Confirm Modal Deploy
 
