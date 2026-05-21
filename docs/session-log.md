@@ -3,6 +3,31 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 One-Time Team Key Reveal
+
+### Changed
+- Created `feature/key-reveal-warning` from `main`.
+- The lobby "Share This Team Key" panel now carries an advisory: copy and
+  share the key now, because it cannot be shown again and a lost key can only
+  be replaced by an admin rotating the team.
+- Made the generated key one-time - it is no longer written to `localStorage`.
+  The panel shows the key only right after creation; reloading or leaving the
+  lobby clears it. This also removes the plaintext key from browser storage
+  (an exposure flagged in the 2026-05-11 security scan).
+- Removed the now-dead `retroTeamKey` localStorage handling from `login.js`;
+  the lobby also clears any stale value left by older builds.
+
+### Verified
+- `node --check` on `public/lobby.js` and `public/login.js`; `git diff --check`.
+- `npm test`, `npm run test:e2e` (5 passed), `npm audit --omit=dev`
+  (0 vulnerabilities).
+- Browser check: the warning shows on key creation, and the key and panel are
+  gone after a reload with nothing left in `localStorage`.
+
+### Next
+- Deploy with the next release - this is front-end only, no schema or server
+  change.
+
 ## 2026-05-20 Key Rotation Production Deploy
 
 ### Changed

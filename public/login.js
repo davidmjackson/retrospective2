@@ -89,12 +89,5 @@ async function login(name, role, team, key) {
   localStorage.setItem("retroUserName", user.name);
   localStorage.setItem("retroUserRole", user.role);
   localStorage.setItem("retroUserTeam", user.team);
-  if (data.teamKey && user.team) {
-    localStorage.setItem("retroTeamKey", data.teamKey);
-    localStorage.setItem("retroTeamKeyTeam", user.team);
-  } else {
-    localStorage.removeItem("retroTeamKey");
-    localStorage.removeItem("retroTeamKeyTeam");
-  }
   window.location.href = user.role === "admin" ? "/admin" : "/lobby";
 }

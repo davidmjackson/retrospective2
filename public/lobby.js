@@ -21,6 +21,10 @@ let userRole = "participant";
 let userTeam = "";
 let lobbySocket = null;
 
+// Older builds persisted the team key in localStorage; it is no longer stored.
+localStorage.removeItem("retroTeamKey");
+localStorage.removeItem("retroTeamKeyTeam");
+
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem("retroUserName");
@@ -165,27 +169,14 @@ function connectLobbySocket() {
 
 sortSelect.addEventListener("change", renderRetros);
 
-function showTeamKey() {
+function revealTeamKey(teamName, key) {
   if (!teamKeyPanel || !teamKeyValue || !teamKeyTeam) {
     return;
   }
-  const storedKey = localStorage.getItem("retroTeamKey");
-  const storedTeam = localStorage.getItem("retroTeamKeyTeam");
-  if (userRole !== "facilitator") {
-    localStorage.removeItem("retroTeamKey");
-    localStorage.removeItem("retroTeamKeyTeam");
-  }
-  if (
-    userRole === "facilitator" &&
-    storedKey &&
-    storedTeam
-  ) {
-    teamKeyPanel.hidden = false;
-    teamKeyValue.textContent = storedKey;
-    teamKeyTeam.textContent = storedTeam;
-  } else {
-    teamKeyPanel.hidden = true;
-  }
+  teamKeyValue.textContent = key;
+  teamKeyTeam.textContent = teamName;
+  teamKeyPanel.hidden = false;
+  teamKeyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 if (createTeamForm) {
@@ -213,12 +204,10 @@ if (createTeamForm) {
       }
       return;
     }
-    localStorage.setItem("retroTeamKey", data.teamKey);
-    localStorage.setItem("retroTeamKeyTeam", data.team);
     if (newTeamName) {
       newTeamName.value = "";
     }
-    showTeamKey();
+    revealTeamKey(data.team, data.teamKey);
   });
 }
 
@@ -242,10 +231,11 @@ if (teamKeyCopy) {
 
 if (teamKeyDismiss) {
   teamKeyDismiss.addEventListener("click", () => {
-    localStorage.removeItem("retroTeamKey");
-    localStorage.removeItem("retroTeamKeyTeam");
     if (teamKeyPanel) {
       teamKeyPanel.hidden = true;
+    }
+    if (teamKeyValue) {
+      teamKeyValue.textContent = "";
     }
   });
 }
@@ -321,7 +311,6 @@ async function init() {
     createTeam.value = userTeam;
     createTeam.disabled = true;
   }
-  showTeamKey();
   await loadRetros();
   connectLobbySocket();
 }
