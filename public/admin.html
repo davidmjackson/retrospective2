@@ -78,6 +78,33 @@
       </div>
     </dialog>
 
+    <dialog class="action-dialog confirm-dialog" id="confirm-dialog">
+      <div class="confirm-content">
+        <header class="dialog-header">
+          <div>
+            <h2 id="confirm-title">Confirm</h2>
+            <p id="confirm-message"></p>
+          </div>
+          <button
+            type="button"
+            class="dialog-close"
+            id="confirm-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-btn" id="confirm-cancel">
+            Cancel
+          </button>
+          <button type="button" class="primary-btn" id="confirm-accept">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <script src="admin.js"></script>
   </body>
 </html>

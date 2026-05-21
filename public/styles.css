@@ -1501,7 +1501,8 @@ textarea {
 
 .action-dialog form,
 .instructions-content,
-.key-reveal-content {
+.key-reveal-content,
+.confirm-content {
   padding: 22px;
   display: grid;
   gap: 14px;
@@ -1519,6 +1520,10 @@ textarea {
 
 .key-reveal-dialog {
   width: min(440px, calc(100vw - 32px));
+}
+
+.confirm-dialog {
+  width: min(420px, calc(100vw - 32px));
 }
 
 .key-reveal-team {

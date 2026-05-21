@@ -3,6 +3,27 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Admin Confirm Modal
+
+### Changed
+- Created `feature/rotate-confirm-modal` from `main`.
+- Replaced the browser `window.confirm()` alert used for the admin
+  "Rotate key" and "Delete team" actions with a styled in-page confirmation
+  modal, consistent with the app's other dialogs.
+- Added a reusable promise-based `confirmAction()` helper (title, message,
+  confirm-button label); accept, cancel, close, backdrop, and Escape all
+  resolve it.
+- Updated the admin e2e test to drive the new confirm dialog.
+
+### Verified
+- `node --check` on `public/admin.js` and the e2e spec; `git diff --check`.
+- `npm test`, `npm run test:e2e` (5 passed), `npm audit --omit=dev`
+  (0 vulnerabilities).
+- Browser check of the rotate confirmation modal.
+
+### Next
+- Deploy with the next release - front-end only, no schema or server change.
+
 ## 2026-05-20 One-Time Team Key Reveal
 
 ### Changed
