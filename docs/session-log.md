@@ -3,6 +3,25 @@
 Use this log to preserve project context between work sessions. Keep entries concise:
 what changed, what was verified, decisions made, and the next useful options.
 
+## 2026-05-20 Key Warning and Confirm Modal Deploy
+
+### Changed
+- Merged `feature/key-reveal-warning` and `feature/rotate-confirm-modal` into
+  `main` (merge commit `e798360`) and deployed it to production at
+  sprintretro.uk.
+- Front-end-only release: `git pull` plus a service restart - no database
+  backup or migration needed.
+
+### Verified
+- Merged `main`: `node --check`, `git diff --check`, `npm test`,
+  `npm run test:e2e` (5 passed), `npm audit --omit=dev` (0 vulnerabilities).
+- `/health` returned `{"status":"ok"}` after the restart.
+- Smoke-tested live: the lobby team-key advisory shows and the key is
+  one-time, and the admin rotate confirmation uses the styled modal.
+
+### Next
+- Delete the merged feature branches on GitHub when convenient.
+
 ## 2026-05-20 Admin Confirm Modal
 
 ### Changed
