@@ -1,86 +1,15 @@
-:root {
-  color-scheme: light;
-  --page: #f8fafc;
-  --surface: #ffffff;
-  --surface-soft: #f6f8fb;
-  --line: #dce3ed;
-  --line-strong: #cbd5e1;
-  --ink: #101828;
-  --muted: #667085;
-  --muted-2: #94a3b8;
-  --primary: #5b35d5;
-  --primary-strong: #4b25c0;
-  --primary-soft: #efeaff;
-  --green: #1ca35c;
-  --green-soft: #edf9f1;
-  --green-line: #bfebce;
-  --red: #e5484d;
-  --red-soft: #fff0f0;
-  --red-line: #ffd0d2;
-  --blue: #2479d9;
-  --blue-soft: #eef7ff;
-  --blue-line: #c8e2ff;
-  --warning: #f59e0b;
-  --radius: 8px;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-md: 0 14px 34px rgba(15, 23, 42, 0.08);
-  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
+/* public/css/app.css
+ *
+ * Retrospective-specific layouts only. Shared tokens, base, and components
+ * live in theme-core.css; palette + Pinboard specifics live in
+ * theme-retro.css.
+ */
 
-* {
-  box-sizing: border-box;
-}
+/* ---------------------------------------------------------------------------
+ * Local aliases — deprecated HTML class names kept working without touching markup.
+ * ------------------------------------------------------------------------ */
 
-[hidden] {
-  display: none !important;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  color: var(--ink);
-  background: var(--page);
-  font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-a {
-  color: inherit;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-.page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.login-page,
-.lobby-page,
-.actions-page,
-.admin-page,
-.legal-page {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96) 42%),
-    radial-gradient(circle at top right, rgba(91, 53, 213, 0.08), transparent 32%),
-    var(--page);
-}
-
-.page-content {
-  width: min(1180px, calc(100vw - 48px));
-  margin: 0 auto 40px;
-  display: grid;
-  gap: 20px;
-}
-
+/* .eyebrow maps to the shared .kicker style */
 .eyebrow {
   margin: 0 0 6px;
   color: var(--muted);
@@ -89,41 +18,82 @@ textarea {
   text-transform: uppercase;
 }
 
-.card,
-.panel {
+/* Legacy button aliases — used extensively in HTML and JS */
+.primary-btn,
+.secondary-btn,
+.link-btn,
+.timer-actions button {
+  min-height: 38px;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.primary-btn,
+.timer-actions button#timer-start {
+  color: #fff;
+  background: linear-gradient(180deg, #6845df 0%, var(--accent) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 8px 18px rgba(91, 53, 213, 0.22);
+}
+
+.primary-btn:hover,
+.timer-actions button#timer-start:hover {
+  background: var(--accent);
+  filter: brightness(0.95);
+}
+
+.secondary-btn,
+.timer-actions button {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  color: var(--ink);
+  border-color: var(--border-st);
   box-shadow: var(--shadow-sm);
 }
 
-.panel-copy {
-  margin: -4px 0 16px;
-  color: var(--muted);
+.secondary-btn:hover,
+.timer-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-.auth-card {
-  padding: 28px;
+.secondary-btn:disabled,
+.link-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
-.auth-header h1,
-.auth-header h2 {
-  margin: 0 0 8px;
-  font-size: 1.75rem;
-  line-height: 1.15;
+.secondary-btn:disabled:hover {
+  border-color: var(--border-st);
+  color: var(--ink);
 }
 
-.auth-header p {
-  margin: 0 0 18px;
-  color: var(--muted);
+.link-btn {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  border: none;
 }
 
-.auth-form,
-.form-grid {
-  display: grid;
-  gap: 14px;
+/* .error-text — referenced in login.html and lobby.html */
+.error-text {
+  margin: 0;
+  color: var(--err);
+  font-size: 0.88rem;
 }
 
+/* ---------------------------------------------------------------------------
+ * Field — retro uses display:grid layout (differs from theme-core's block)
+ * ------------------------------------------------------------------------ */
 .field {
   display: grid;
   gap: 7px;
@@ -145,20 +115,14 @@ textarea {
   font-weight: 500;
 }
 
-.error-text {
-  margin: 0;
-  color: #b42318;
-  font-size: 0.88rem;
-}
-
 .field input,
 .field select,
 .field textarea,
 .action-notes textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   background: #fff;
   color: var(--ink);
   outline: none;
@@ -169,84 +133,85 @@ textarea {
 .field textarea:focus,
 .action-field input:focus,
 .action-notes textarea:focus {
-  border-color: var(--primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(91, 53, 213, 0.14);
 }
 
-.primary-btn,
-.secondary-btn,
-.link-btn,
-.timer-actions button {
-  min-height: 38px;
-  padding: 9px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  text-decoration: none;
-  border: 1px solid transparent;
-}
+/* ---------------------------------------------------------------------------
+ * Page shells
+ * ------------------------------------------------------------------------ */
 
-.primary-btn,
-.timer-actions button#timer-start {
-  color: #fff;
-  background: linear-gradient(180deg, #6845df 0%, var(--primary) 100%);
-  border-color: var(--primary);
-  box-shadow: 0 8px 18px rgba(91, 53, 213, 0.22);
-}
-
-.primary-btn:hover,
-.timer-actions button#timer-start:hover {
-  background: var(--primary-strong);
-}
-
-.secondary-btn,
-.timer-actions button {
-  background: var(--surface);
-  color: var(--ink);
-  border-color: var(--line-strong);
-  box-shadow: var(--shadow-sm);
-}
-
-.secondary-btn:hover,
-.timer-actions button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.secondary-btn:disabled,
-.link-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.secondary-btn:disabled:hover {
-  border-color: var(--line-strong);
-  color: var(--ink);
-}
-
-.link-btn {
-  min-height: 0;
+/* Override theme-core's .page which is a constrained content block */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   padding: 0;
-  background: transparent;
-  color: var(--primary);
-  border: none;
+  max-width: none;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+.lobby-page,
+.actions-page,
+.admin-page,
+.legal-page {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96) 42%),
+    radial-gradient(circle at top right, rgba(91, 53, 213, 0.08), transparent 32%),
+    var(--bg);
+}
+
+.page-content {
+  width: min(1180px, calc(100vw - 48px));
+  margin: 0 auto 40px;
+  display: grid;
+  gap: 20px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Panel — surface container (theme-core's .card has padding 24px; .panel is
+ * a retro-specific variant with explicit 20px padding)
+ * ------------------------------------------------------------------------ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.panel-copy {
+  margin: -4px 0 16px;
   color: var(--muted);
-  font-size: 0.88rem;
-  text-decoration: none;
 }
 
+/* ---------------------------------------------------------------------------
+ * Auth card (login page)
+ * ------------------------------------------------------------------------ */
+.auth-card {
+  padding: 28px;
+}
+
+.auth-form,
+.form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-header h1,
+.auth-header h2 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  line-height: 1.15;
+}
+
+.auth-header p {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------
+ * App header / page header
+ * ------------------------------------------------------------------------ */
 .app-header {
   width: min(1180px, calc(100vw - 48px));
   margin: 0 auto;
@@ -280,17 +245,19 @@ textarea {
   flex-wrap: wrap;
 }
 
+/* ---------------------------------------------------------------------------
+ * Status pills
+ * ------------------------------------------------------------------------ */
 .status,
 .status-pill,
-.pill,
 .retro-status {
   display: inline-flex;
   align-items: center;
   width: max-content;
   min-height: 28px;
   padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--surface-soft);
+  border-radius: var(--r-pill);
+  background: var(--bg-warm);
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 700;
@@ -299,14 +266,14 @@ textarea {
 .status.online,
 .pill.open,
 .retro-status.open {
-  color: var(--primary);
-  background: var(--primary-soft);
+  color: var(--accent);
+  background: var(--accent-3);
 }
 
 .pill.closed,
 .retro-status.closed {
-  color: #b42318;
-  background: #fff1f3;
+  color: var(--err);
+  background: var(--err-bg);
 }
 
 .activity,
@@ -315,8 +282,22 @@ textarea {
   font-size: 0.86rem;
 }
 
-/* Login screen */
+/* ---------------------------------------------------------------------------
+ * Back link
+ * ------------------------------------------------------------------------ */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-decoration: none;
+}
 
+/* ---------------------------------------------------------------------------
+ * Login screen layout
+ * ------------------------------------------------------------------------ */
 .login-shell {
   width: min(1080px, calc(100vw - 40px));
   min-height: calc(100vh - 58px);
@@ -355,17 +336,18 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow-md);
 }
 
 .preview-column {
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .preview-column::before,
@@ -375,7 +357,7 @@ textarea {
   left: 14px;
   right: 14px;
   height: 72px;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid currentColor;
   opacity: 0.45;
@@ -390,18 +372,18 @@ textarea {
 }
 
 .preview-column.start {
-  color: var(--green-line);
-  background: linear-gradient(180deg, var(--green-soft), #fff);
+  color: var(--ok-bg);
+  background: linear-gradient(180deg, var(--ok-bg), #fff);
 }
 
 .preview-column.stop {
-  color: var(--red-line);
-  background: linear-gradient(180deg, var(--red-soft), #fff);
+  color: var(--err-bg);
+  background: linear-gradient(180deg, var(--err-bg), #fff);
 }
 
 .preview-column.continue {
-  color: var(--blue-line);
-  background: linear-gradient(180deg, var(--blue-soft), #fff);
+  color: var(--info-bg);
+  background: linear-gradient(180deg, var(--info-bg), #fff);
 }
 
 .login-footer {
@@ -413,16 +395,19 @@ textarea {
 }
 
 .login-footer a {
-  color: var(--primary);
+  color: var(--accent);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .login-footer a:hover {
-  color: var(--primary-strong);
+  filter: brightness(0.85);
 }
 
+/* ---------------------------------------------------------------------------
+ * Legal / licence page
+ * ------------------------------------------------------------------------ */
 .legal-shell {
   width: min(860px, calc(100vw - 40px));
   margin: 0 auto;
@@ -457,14 +442,12 @@ textarea {
   margin-top: 30px;
 }
 
-/* Retrospective session screen */
-
+/* ---------------------------------------------------------------------------
+ * Retrospective board (retro-page)
+ * ------------------------------------------------------------------------ */
 .retro-page {
   min-height: 100vh;
   padding-bottom: 62px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.96) 42%),
-    var(--page);
 }
 
 .session-header {
@@ -473,7 +456,7 @@ textarea {
   margin: 0;
   padding: 26px 30px 24px;
   background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .session-title {
@@ -522,14 +505,14 @@ textarea {
 
 .session-sidebar {
   background: rgba(255, 255, 255, 0.78);
-  border-left: 1px solid var(--line);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-panel {
   padding: 28px 26px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .sidebar-panel h2 {
@@ -544,6 +527,9 @@ textarea {
   gap: 12px;
 }
 
+/* ---------------------------------------------------------------------------
+ * Health strip (retro board sidebar)
+ * ------------------------------------------------------------------------ */
 .health-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));
@@ -557,8 +543,8 @@ textarea {
   display: grid;
   align-content: center;
   gap: 5px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
@@ -579,8 +565,8 @@ textarea {
 }
 
 .health-card:nth-child(1) {
-  border-color: var(--green-line);
-  background: linear-gradient(180deg, rgba(237, 249, 241, 0.74), rgba(255, 255, 255, 0.92));
+  border-color: var(--ok-bg);
+  background: linear-gradient(180deg, rgba(220, 233, 218, 0.74), rgba(255, 255, 255, 0.92));
 }
 
 .health-card:nth-child(2) {
@@ -589,8 +575,8 @@ textarea {
 }
 
 .health-card:nth-child(3) {
-  border-color: var(--blue-line);
-  background: linear-gradient(180deg, rgba(238, 247, 255, 0.78), rgba(255, 255, 255, 0.94));
+  border-color: var(--info-bg);
+  background: linear-gradient(180deg, rgba(220, 229, 244, 0.78), rgba(255, 255, 255, 0.94));
 }
 
 .health-card:nth-child(4) {
@@ -598,6 +584,9 @@ textarea {
   background: linear-gradient(180deg, #fff7e6, rgba(255, 255, 255, 0.94));
 }
 
+/* ---------------------------------------------------------------------------
+ * Instruction banner
+ * ------------------------------------------------------------------------ */
 .instruction-banner {
   min-height: 52px;
   margin-bottom: 28px;
@@ -607,9 +596,9 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   border: 1px solid #dcd2ff;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: linear-gradient(90deg, #f5f1ff, #fbfaff);
-  color: var(--primary);
+  color: var(--accent);
 }
 
 .instruction-banner p {
@@ -633,7 +622,7 @@ textarea {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -647,6 +636,9 @@ textarea {
   border-color: currentColor;
 }
 
+/* ---------------------------------------------------------------------------
+ * Column add button
+ * ------------------------------------------------------------------------ */
 .column-add {
   width: 100%;
   margin-top: 12px;
@@ -656,8 +648,8 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px dashed var(--border-st);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
   cursor: pointer;
@@ -674,8 +666,8 @@ textarea {
 
 .column-add:hover {
   border-style: solid;
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--accent);
+  color: var(--accent);
   background: #fff;
 }
 
@@ -690,6 +682,9 @@ textarea {
   opacity: 0.55;
 }
 
+/* ---------------------------------------------------------------------------
+ * Board grid and columns
+ * ------------------------------------------------------------------------ */
 .board {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
@@ -699,8 +694,8 @@ textarea {
 .column {
   min-height: 340px;
   padding: 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -708,18 +703,18 @@ textarea {
 }
 
 .column-start {
-  border-color: var(--green-line);
-  background: linear-gradient(180deg, rgba(237, 249, 241, 0.72), rgba(255, 255, 255, 0.86));
+  border-color: var(--ok-bg);
+  background: linear-gradient(180deg, rgba(220, 233, 218, 0.72), rgba(255, 255, 255, 0.86));
 }
 
 .column-stop {
-  border-color: var(--red-line);
-  background: linear-gradient(180deg, rgba(255, 240, 240, 0.78), rgba(255, 255, 255, 0.88));
+  border-color: var(--err-bg);
+  background: linear-gradient(180deg, rgba(248, 215, 218, 0.78), rgba(255, 255, 255, 0.88));
 }
 
 .column-continue {
-  border-color: var(--blue-line);
-  background: linear-gradient(180deg, rgba(238, 247, 255, 0.78), rgba(255, 255, 255, 0.88));
+  border-color: var(--info-bg);
+  background: linear-gradient(180deg, rgba(220, 229, 244, 0.78), rgba(255, 255, 255, 0.88));
 }
 
 .column-header {
@@ -739,7 +734,7 @@ textarea {
 .column-icon {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -753,19 +748,19 @@ textarea {
 .column-start .column-icon,
 .column-start .column-count,
 .column-start .vote-btn {
-  background: var(--green);
+  background: var(--ok);
 }
 
 .column-stop .column-icon,
 .column-stop .column-count,
 .column-stop .vote-btn {
-  background: var(--red);
+  background: var(--err);
 }
 
 .column-continue .column-icon,
 .column-continue .column-count,
 .column-continue .vote-btn {
-  background: var(--blue);
+  background: var(--info);
 }
 
 .column h2 {
@@ -784,7 +779,7 @@ textarea {
   min-width: 28px;
   height: 28px;
   padding: 0 8px;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -793,6 +788,12 @@ textarea {
   font-weight: 800;
 }
 
+/* ---------------------------------------------------------------------------
+ * Card list (board cards)
+ * NOTE: theme-core defines .card with padding:24px. Board cards are scoped
+ * under .retro-page to avoid conflict. The general .card rule is not repeated
+ * here — theme-core's version is fine for non-board uses (auth-card, etc.).
+ * ------------------------------------------------------------------------ */
 .card-list {
   list-style: none;
   flex: 1;
@@ -814,11 +815,13 @@ textarea {
   text-align: center;
 }
 
+/* Board card — scoped to .retro-page to override theme-core's .card padding */
 .retro-page .card {
   position: relative;
   min-height: 124px;
   padding: 14px 14px 12px;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border);
   cursor: grab;
   display: flex;
   flex-direction: column;
@@ -829,17 +832,17 @@ textarea {
 
 .column-start .card {
   background: #eaf8ef;
-  border: 1px solid var(--green-line);
+  border: 1px solid var(--ok-bg);
 }
 
 .column-stop .card {
   background: #fff0f0;
-  border: 1px solid var(--red-line);
+  border: 1px solid var(--err-bg);
 }
 
 .column-continue .card {
   background: #edf7ff;
-  border: 1px solid var(--blue-line);
+  border: 1px solid var(--info-bg);
 }
 
 .retro-page .card strong {
@@ -873,13 +876,13 @@ textarea {
 .avatar {
   width: 27px;
   height: 27px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   background: #eef4ff;
-  color: var(--primary);
+  color: var(--accent);
   border: 1px solid #bcaeff;
   font-size: 0.75rem;
   font-weight: 800;
@@ -890,7 +893,7 @@ textarea {
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   color: #fff;
   cursor: pointer;
   display: inline-flex;
@@ -903,8 +906,8 @@ textarea {
 .create-action-btn {
   min-height: 28px;
   padding: 0 9px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.8);
   color: var(--ink);
   cursor: pointer;
@@ -914,15 +917,15 @@ textarea {
 }
 
 .create-action-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .create-action-btn:disabled {
   cursor: default;
-  border-color: var(--green-line);
-  background: var(--green-soft);
-  color: var(--green);
+  border-color: var(--ok-bg);
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .vote-btn:hover {
@@ -935,12 +938,16 @@ textarea {
   font-weight: 900;
 }
 
+/* Dragula mirror */
 .gu-mirror {
   list-style: none;
   opacity: 0.94;
   box-shadow: var(--shadow-md);
 }
 
+/* ---------------------------------------------------------------------------
+ * Timer
+ * ------------------------------------------------------------------------ */
 .timer {
   display: grid;
   gap: 14px;
@@ -955,12 +962,12 @@ textarea {
   display: grid;
   gap: 6px;
   border: 1px solid #dcd2ff;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: linear-gradient(135deg, #f7f3ff, #ffffff);
 }
 
 .timer-readout span {
-  color: var(--primary);
+  color: var(--accent);
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -989,8 +996,8 @@ textarea {
 .timer-set input {
   width: 100%;
   min-height: 34px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   text-align: center;
 }
 
@@ -998,8 +1005,8 @@ textarea {
   width: 34px;
   height: 34px;
   padding: 0;
-  border-radius: var(--radius);
-  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-st);
   background: var(--surface);
   cursor: pointer;
   color: var(--ink);
@@ -1012,6 +1019,9 @@ textarea {
   gap: 8px;
 }
 
+/* ---------------------------------------------------------------------------
+ * Retro health (sidebar)
+ * ------------------------------------------------------------------------ */
 .retro-health {
   display: grid;
   gap: 14px;
@@ -1024,16 +1034,16 @@ textarea {
 .health-status {
   padding: 10px 12px;
   border: 1px solid #f7d789;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: #fff7e6;
   color: #854d0e;
   font-weight: 800;
 }
 
 .health-status.is-ready {
-  border-color: var(--green-line);
-  background: var(--green-soft);
-  color: var(--green);
+  border-color: var(--ok-bg);
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .health-status-detail {
@@ -1047,8 +1057,8 @@ textarea {
   padding: 12px;
   display: grid;
   gap: 5px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: var(--surface);
 }
 
@@ -1078,7 +1088,7 @@ textarea {
 
 .participant-avatar:nth-child(3n + 1) {
   background: #f1edff;
-  color: var(--primary);
+  color: var(--accent);
 }
 
 .participant-avatar:nth-child(3n + 2) {
@@ -1095,9 +1105,15 @@ textarea {
 
 .participant-avatar.muted {
   color: var(--muted);
-  border-color: var(--line-strong);
+  border-color: var(--border-st);
 }
 
+/* ---------------------------------------------------------------------------
+ * Tips bar (fixed bottom strip on retro page)
+ * NOTE: This is retro-specific — NOT an .app-footer override. The tips bar
+ * remains fixed-position intentionally; it is a full-width keyboard shortcut
+ * hint, not a navigation footer.
+ * ------------------------------------------------------------------------ */
 .tips-bar {
   position: fixed;
   left: 0;
@@ -1110,7 +1126,7 @@ textarea {
   align-items: center;
   gap: 24px;
   background: rgba(255, 255, 255, 0.94);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   color: var(--muted);
   backdrop-filter: blur(10px);
 }
@@ -1126,18 +1142,19 @@ textarea {
 .tips-bar p::before {
   content: "○";
   margin-right: 8px;
-  color: var(--muted-2);
+  color: var(--faint);
 }
 
 .tips-bar a {
   margin-left: auto;
-  color: var(--primary);
+  color: var(--accent);
   font-weight: 800;
   text-decoration: none;
 }
 
-/* Lobby, admin and actions pages */
-
+/* ---------------------------------------------------------------------------
+ * Lobby, admin, and actions pages
+ * ------------------------------------------------------------------------ */
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1150,8 +1167,8 @@ textarea {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
@@ -1169,7 +1186,7 @@ textarea {
 .overview-icon {
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1178,13 +1195,13 @@ textarea {
 }
 
 .overview-icon.purple {
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: #f5f1ff;
+  color: var(--accent);
 }
 
 .overview-icon.green {
-  background: var(--green-soft);
-  color: var(--green);
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .actions-summary,
@@ -1201,7 +1218,7 @@ textarea {
   margin: 14px 0 0;
   padding: 10px 12px;
   border: 1px solid #f7d789;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   background: #fff7e6;
   color: #854d0e;
   font-size: 0.88rem;
@@ -1214,8 +1231,8 @@ textarea {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: #f5f1ff;
+  color: var(--accent);
   font-family: "Courier New", monospace;
   font-weight: 800;
 }
@@ -1235,7 +1252,7 @@ textarea {
 .team-table th,
 .team-table td {
   padding: 12px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
   text-align: left;
   background: var(--surface);
 }
@@ -1254,10 +1271,6 @@ textarea {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.panel {
-  padding: 20px;
 }
 
 .retro-panel,
@@ -1284,8 +1297,8 @@ textarea {
 .sort-controls select {
   min-height: 34px;
   padding: 6px 30px 6px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   background: var(--surface);
 }
 
@@ -1303,9 +1316,9 @@ textarea {
   justify-content: space-between;
   gap: 12px;
   padding: 14px;
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-warm);
+  border: 1px solid var(--border);
 }
 
 .retro-item:hover {
@@ -1338,6 +1351,9 @@ textarea {
   font-size: 0.9rem;
 }
 
+/* ---------------------------------------------------------------------------
+ * Actions (kanban) board
+ * ------------------------------------------------------------------------ */
 .actions-board {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1346,8 +1362,8 @@ textarea {
 
 .kanban-column {
   padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -1361,8 +1377,8 @@ textarea {
 }
 
 .kanban-column:nth-child(2) {
-  border-color: var(--blue-line);
-  background: linear-gradient(180deg, rgba(238, 247, 255, 0.72), #fff);
+  border-color: var(--info-bg);
+  background: linear-gradient(180deg, rgba(220, 229, 244, 0.72), #fff);
 }
 
 .kanban-column:nth-child(3) {
@@ -1371,8 +1387,8 @@ textarea {
 }
 
 .kanban-column:nth-child(4) {
-  border-color: var(--green-line);
-  background: linear-gradient(180deg, rgba(237, 249, 241, 0.72), #fff);
+  border-color: var(--ok-bg);
+  background: linear-gradient(180deg, rgba(220, 233, 218, 0.72), #fff);
 }
 
 .kanban-header h2,
@@ -1403,8 +1419,8 @@ textarea {
 
 .action-card {
   padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--shadow-sm);
 }
@@ -1450,8 +1466,8 @@ textarea {
   width: 100%;
   min-height: 34px;
   padding: 8px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   background: #fff;
   color: var(--ink);
   font-size: 0.88rem;
@@ -1473,11 +1489,11 @@ textarea {
 }
 
 .save-status.is-success {
-  color: var(--green);
+  color: var(--ok);
 }
 
 .save-status.is-error {
-  color: var(--red);
+  color: var(--err);
 }
 
 .action-notes textarea {
@@ -1485,11 +1501,14 @@ textarea {
   text-transform: none;
 }
 
+/* ---------------------------------------------------------------------------
+ * Dialogs (action, instructions, key-reveal, confirm)
+ * ------------------------------------------------------------------------ */
 .action-dialog {
   width: min(520px, calc(100vw - 32px));
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-md);
@@ -1543,9 +1562,9 @@ textarea {
   flex: 1 1 auto;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
+  background: var(--bg-warm);
   color: var(--ink);
   font-family: "Courier New", monospace;
   font-size: 1.1rem;
@@ -1573,7 +1592,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   cursor: pointer;
   font-size: 1.25rem;
   font-weight: 900;
@@ -1582,25 +1601,26 @@ textarea {
 
 .icon-btn-save {
   color: #fff;
-  background: linear-gradient(180deg, #6845df 0%, var(--primary) 100%);
-  border: 1px solid var(--primary);
+  background: linear-gradient(180deg, #6845df 0%, var(--accent) 100%);
+  border: 1px solid var(--accent);
   box-shadow: 0 8px 18px rgba(91, 53, 213, 0.22);
 }
 
 .icon-btn-save:hover {
-  background: var(--primary-strong);
+  background: var(--accent);
+  filter: brightness(0.95);
 }
 
 .icon-btn-close {
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--border-st);
   box-shadow: var(--shadow-sm);
 }
 
 .icon-btn-close:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .note-details {
@@ -1630,8 +1650,8 @@ textarea {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-st);
+  border-radius: var(--r-md);
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
@@ -1647,6 +1667,9 @@ textarea {
   margin-top: 4px;
 }
 
+/* ---------------------------------------------------------------------------
+ * Instructions dialog content
+ * ------------------------------------------------------------------------ */
 .instruction-section {
   display: grid;
   gap: 8px;
@@ -1677,9 +1700,9 @@ textarea {
 
 .instruction-list div {
   padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-warm);
 }
 
 .instruction-list dt {
@@ -1691,6 +1714,10 @@ textarea {
   margin: 0;
   color: var(--muted);
 }
+
+/* ---------------------------------------------------------------------------
+ * Responsive overrides
+ * ------------------------------------------------------------------------ */
 
 @media (max-width: 1080px) {
   .login-shell {
@@ -1708,13 +1735,13 @@ textarea {
 
   .session-sidebar {
     border-left: none;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sidebar-panel {
-    border-right: 1px solid var(--line);
+    border-right: 1px solid var(--border);
   }
 }
 

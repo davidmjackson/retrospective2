@@ -90,6 +90,21 @@ let timerSoundUnlocked = false;
 let socket = null;
 let onlineUsers = 0;
 
+/**
+ * Pick a pin colour for a note. Hash on the note id so the same note
+ * always has the same colour — feels stable on re-render.
+ */
+function pinColorFor(note) {
+  const palette = ["red", "blue", "yellow", "green"];
+  const seed = String(note.id || note.text || "");
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+// Track card IDs that should receive the pin-up animation on next render.
+let freshCardIds = new Set();
+
 if (!retroId) {
   window.location.href = "/lobby";
 }
@@ -207,20 +222,32 @@ function renderState(state) {
     }
     sortedCards.forEach((card) => {
       const li = document.createElement("li");
-      li.className = "card";
+      li.className = "card polaroid";
       li.dataset.id = card.id;
       li.dataset.text = card.text;
       li.dataset.votes = String(card.votes || 0);
       li.dataset.details = card.details || "";
+
+      // Pin head
+      const pin = document.createElement("div");
+      pin.className = `pin pin-${pinColorFor(card)}`;
+      li.appendChild(pin);
+
+      // Polaroid body (card text)
+      const body = document.createElement("div");
+      body.className = "polaroid-body";
       const strong = document.createElement("strong");
       strong.textContent = card.text;
-      li.appendChild(strong);
+      body.appendChild(strong);
       if (card.details) {
         const details = document.createElement("p");
         details.className = "card-details";
         details.textContent = card.details;
-        li.appendChild(details);
+        body.appendChild(details);
       }
+      li.appendChild(body);
+
+      // Polaroid footer (author initials, votes, controls)
       const footer = document.createElement("div");
       footer.className = "card-footer";
       const avatar = document.createElement("span");
@@ -255,9 +282,17 @@ function renderState(state) {
       cardControls.appendChild(button);
       footer.appendChild(cardControls);
       li.appendChild(footer);
+
+      // Pin-up animation for freshly-added notes
+      if (freshCardIds.has(card.id)) {
+        li.classList.add("fresh");
+        li.addEventListener("animationend", () => li.classList.remove("fresh"), { once: true });
+      }
+
       columns[key].appendChild(li);
     });
   });
+  freshCardIds.clear();
 
   if (state.lastAction && state.lastAction.user) {
     activityEl.textContent = `${state.lastAction.user} ${state.lastAction.action}`;
@@ -743,6 +778,26 @@ function connectSocket() {
       return;
     }
     if (data.type === "init" || data.type === "update") {
+      if (data.type === "update") {
+        // Detect genuinely new cards by comparing incoming state to current state.
+        const prevIds = new Set(
+          [
+            ...(currentState.columns.well || []),
+            ...(currentState.columns.improve || []),
+            ...(currentState.columns.continue || currentState.columns.action || [])
+          ].map((c) => c.id)
+        );
+        const newRetroColumns = data.retro.columns || {};
+        [
+          ...(newRetroColumns.well || []),
+          ...(newRetroColumns.improve || []),
+          ...(newRetroColumns.continue || newRetroColumns.action || [])
+        ].forEach((c) => {
+          if (!prevIds.has(c.id)) {
+            freshCardIds.add(c.id);
+          }
+        });
+      }
       currentState = data.retro;
       renderState(currentState);
       if (currentState.timer) {

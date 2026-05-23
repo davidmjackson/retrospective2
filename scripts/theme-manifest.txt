@@ -1,0 +1,5 @@
+public/css/theme-core.css
+public/illos/theme-illos.svg
+public/fonts/Fraunces.woff2
+public/fonts/Inter.woff2
+public/fonts/JetBrainsMono.woff2
