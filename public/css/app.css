@@ -150,7 +150,6 @@
   max-width: none;
 }
 
-.login-page,
 .lobby-page,
 .actions-page,
 .admin-page,
@@ -449,9 +448,6 @@
 .retro-page {
   min-height: 100vh;
   padding-bottom: 62px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.96) 42%),
-    var(--bg);
 }
 
 .session-header {
