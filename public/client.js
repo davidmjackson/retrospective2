@@ -291,8 +291,8 @@ function renderState(state) {
 
       columns[key].appendChild(li);
     });
-    freshCardIds.clear();
   });
+  freshCardIds.clear();
 
   if (state.lastAction && state.lastAction.user) {
     activityEl.textContent = `${state.lastAction.user} ${state.lastAction.action}`;
