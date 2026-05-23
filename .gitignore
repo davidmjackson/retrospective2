@@ -10,3 +10,5 @@ retros.db-wal
 .playwright-retros.db-shm
 .playwright-retros.db-wal
 .playwright-libs/
+.worktrees/
+.superpowers/
