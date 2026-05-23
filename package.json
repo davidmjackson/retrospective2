@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/ws-operations.test.js",
+    "test": "node tests/ws-operations.test.js && node --test tests/theme-contrast.test.js",
     "test:e2e": "playwright test",
     "db:migrate": "node scripts/db-maintenance.js migrate",
     "db:retention": "node scripts/db-maintenance.js retention",
