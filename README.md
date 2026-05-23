@@ -8,6 +8,19 @@ Simple realtime retrospective board with a lobby, live board, and actions report
 - Retrospective board supports Start/Stop/Continue notes, details, votes, drag/drop, and a shared timer.
 - Actions are created deliberately from retro notes and aggregated across teams in a simple kanban view.
 
+## Design
+
+This app uses the shared `theme-core` design system. The canonical source
+lives in `/var/www/signal`. To update the theme here after a change in
+Signal:
+
+    ./scripts/sync-theme.sh /var/www/signal
+    git add public/css/theme-core.css public/illos/theme-illos.svg public/fonts
+    git commit -m "Sync theme-core from Signal"
+
+Retrospective-specific styles live in `public/css/theme-retro.css` and
+`public/css/app.css`.
+
 ## Tech Stack
 - Node.js + Express
 - WebSocket (ws)
