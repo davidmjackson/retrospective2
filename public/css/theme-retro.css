@@ -1,0 +1,121 @@
+/* public/css/theme-retro.css
+ *
+ * Retrospective's "Pinboard" overlay. Loaded AFTER theme-core.css.
+ */
+
+:root {
+  /* --- Palette overrides — see spec §4.1 ---------------------------- */
+  --bg:        #FDF4E3;
+  --bg-warm:   #E8C9A0;
+  --surface:   #FDF8EB;
+  --border:    #E8D9C0;
+  --border-st: #C9B27A;
+  --ink:       #2A1F12;
+  --muted:     #8B5E36;
+  --faint:     #B0916B;
+  --accent:    #C8252A;
+  --accent-on: #FFFFFF;
+  --accent-2:  #5B35D5;   /* secondary pin head */
+  --accent-3:  #F59E0B;   /* tag colour, washi */
+
+  /* Pinboard-specific tokens */
+  --pin-red:    #C8252A;
+  --pin-blue:   #5B35D5;
+  --pin-yellow: #F59E0B;
+  --pin-green:  #2A5A2A;
+}
+
+/* Cork-textured background — used on board pages */
+.cork-bg {
+  background-color: var(--bg-warm);
+  background-image:
+    radial-gradient(circle, rgba(120, 80, 40, 0.18) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(120, 80, 40, 0.10) 1px, transparent 1px);
+  background-size: 7px 7px, 4px 4px;
+  background-position: 0 0, 3px 3px;
+}
+
+/* Washi tape — a small accent ribbon */
+.washi {
+  display: inline-block;
+  height: 18px;
+  width: 60px;
+  background: repeating-linear-gradient(45deg,
+    var(--accent-3) 0 6px,
+    rgba(245, 158, 11, 0.5) 6px 12px);
+  transform: rotate(-12deg);
+}
+
+/* Polaroid — used for retro cards */
+.polaroid {
+  background: var(--surface);
+  padding: var(--s-2) var(--s-2) var(--s-6);
+  box-shadow: 0 6px 14px rgba(42, 31, 18, 0.18);
+  position: relative;
+  transition: transform 120ms ease;
+}
+.polaroid:hover { transform: translateY(-2px) rotate(0); }
+.polaroid .polaroid-body {
+  background: var(--bg);
+  padding: var(--s-3);
+  min-height: 80px;
+  font-family: var(--sans);
+}
+.polaroid .polaroid-author {
+  position: absolute;
+  bottom: var(--s-2);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Pin head — sits on top of the polaroid */
+.pin {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pin-red);
+  box-shadow:
+    inset -2px -2px 0 rgba(0,0,0,0.18),
+    0 2px 3px rgba(0,0,0,0.35);
+  z-index: 2;
+}
+.pin-red    { background: var(--pin-red); }
+.pin-blue   { background: var(--pin-blue); }
+.pin-yellow { background: var(--pin-yellow); }
+.pin-green  { background: var(--pin-green); }
+
+/* Pin-up animation — bouncy scale when a new note lands */
+.polaroid.fresh { animation: pin-up 200ms cubic-bezier(.34,1.56,.64,1) both; }
+
+/* Login hero — washi-taped sign-in card on the corkboard */
+.cork-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-6);
+}
+.cork-hero .card {
+  width: min(440px, 100%);
+  position: relative;
+}
+.cork-hero .card::before {
+  /* a strip of washi tape across the top of the sign-in card */
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 30%;
+  width: 80px;
+  height: 18px;
+  background: repeating-linear-gradient(45deg,
+    var(--accent-3) 0 6px,
+    rgba(245, 158, 11, 0.5) 6px 12px);
+  transform: rotate(-4deg);
+}
