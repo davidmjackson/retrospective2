@@ -1,100 +1,97 @@
 /* public/css/theme-retro.css
  *
- * Retrospective's "Pinboard" overlay. Loaded AFTER theme-core.css.
+ * Retrospective's forest-accent overlay. Loaded AFTER theme-core.css.
+ *
+ * The .cork-bg / .washi / .polaroid / .pin / .cork-hero class names below
+ * are retained for backward compatibility with the existing HTML and
+ * client.js (which constructs <li class="card polaroid"> + <div class="pin
+ * pin-*">), but their styling is deliberately neutralised so nothing
+ * renders as a corkboard / washi tape / pushpin / paper-polaroid. The
+ * design follows /var/www/signal/docs/forestbuild-spec.md §1 + §2 + §4.1.
  */
 
 :root {
-  /* --- Palette overrides — see spec §4.1 ---------------------------- */
-  --bg:        #FDF4E3;
-  --bg-warm:   #E8C9A0;
-  --surface:   #FDF8EB;
-  --border:    #E8D9C0;
-  --border-st: #C9B27A;
-  --ink:       #2A1F12;
-  --muted:     #8B5E36;
-  --faint:     #B0916B;
-  --accent:    #C8252A;
-  --accent-on: #FFFFFF;
-  --accent-2:  #5B35D5;   /* secondary pin head */
-  --accent-3:  #F59E0B;   /* tag colour, washi */
+  /* --- Palette — forest accent per forestbuild-spec.md §1 + §4.1 ----- */
+  --bg:          #FDF8EB;
+  --bg-warm:     #F4ECE0;
+  --surface:     #FFFFFF;
+  --border:      #E8D9C0;
+  --border-st:   #C9B27A;
+  --ink:         #2A1F12;
+  --muted:       #8B5E36;
+  --faint:       #B0916B;
+  --accent:      #2E6F4E;
+  --accent-on:   #FFFFFF;
+  --accent-soft: #DEEBE2;
+  --accent-deep: #245C40;
 
-  /* Pinboard-specific tokens */
-  --pin-red:    #C8252A;
-  --pin-blue:   #5B35D5;
-  --pin-yellow: #F59E0B;
-  --pin-green:  #2A5A2A;
+  /* Status overrides — pull --ok off the accent so green button vs.
+     green badge stay visibly distinct (spec §1.3). Also defined in
+     theme-core.css; duplicated here so theme-retro is self-describing. */
+  --ok:          #1E5A3A;
+  --ok-bg:       #D7E8DC;
 }
 
-/* Cork-textured background — used on board pages */
+/* Cork background — class kept for HTML compat; rendered as a plain
+   cream page background per spec §1.1 (no corkboard texture). */
 .cork-bg {
-  background-color: var(--bg-warm);
-  background-image:
-    radial-gradient(circle, rgba(120, 80, 40, 0.18) 1.5px, transparent 1.5px),
-    radial-gradient(circle, rgba(120, 80, 40, 0.10) 1px, transparent 1px);
-  background-size: 7px 7px, 4px 4px;
-  background-position: 0 0, 3px 3px;
+  background-color: var(--bg);
 }
 
-/* Washi tape — a small accent ribbon */
+/* Washi tape — purely decorative, no spec equivalent. Hidden. */
 .washi {
-  display: inline-block;
-  height: 18px;
-  width: 60px;
-  background: repeating-linear-gradient(45deg,
-    var(--accent-3) 0 6px,
-    rgba(245, 158, 11, 0.5) 6px 12px);
-  transform: rotate(-12deg);
+  display: none;
 }
 
-/* Polaroid — used for retro cards */
+/* Polaroid — class kept for client.js compat. Restyled as the spec §2.5
+   card: surface fill, 1px border, --r-lg radius, --shadow-md, accent-soft
+   halo on hover. No paper / drop-shadow / script-author treatment. */
 .polaroid {
   background: var(--surface);
-  padding: var(--s-2) var(--s-2) var(--s-6);
-  box-shadow: 0 6px 14px rgba(42, 31, 18, 0.18);
-  position: relative;
-  transition: transform 120ms ease;
-}
-.polaroid:hover { transform: translateY(-2px) rotate(0); }
-.polaroid .polaroid-body {
-  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   padding: var(--s-3);
-  min-height: 80px;
+  box-shadow: var(--shadow-md);
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+.polaroid:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md);
+  transform: translateY(-1px);
+}
+.polaroid .polaroid-body {
+  background: transparent;
+  padding: 0;
   font-family: var(--sans);
+  color: var(--ink);
 }
 .polaroid .polaroid-author {
-  position: absolute;
-  bottom: var(--s-2);
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: 'Fraunces', Georgia, serif;
+  display: block;
+  margin-top: var(--s-2);
+  font-family: var(--sans);
   font-size: 0.78rem;
   color: var(--muted);
 }
 
-/* Pin head — sits on top of the polaroid */
+/* Pin head — class kept for client.js compat (it still appends a
+   <div class="pin pin-*"> to every polaroid). Hidden so nothing
+   renders as a pushpin. */
 .pin {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--pin-red);
-  box-shadow:
-    inset -2px -2px 0 rgba(0,0,0,0.18),
-    0 2px 3px rgba(0,0,0,0.35);
-  z-index: 2;
+  display: none;
 }
-.pin-red    { background: var(--pin-red); }
-.pin-blue   { background: var(--pin-blue); }
-.pin-yellow { background: var(--pin-yellow); }
-.pin-green  { background: var(--pin-green); }
+.pin-red, .pin-blue, .pin-yellow, .pin-green {
+  /* Inert — only reachable as `.pin.pin-*` together, and .pin is hidden. */
+}
 
-/* Pin-up animation — bouncy scale when a new note lands */
-.polaroid.fresh { animation: pin-up 200ms cubic-bezier(.34,1.56,.64,1) both; }
+/* Card-enter animation — class kept (client.js adds .fresh to new notes),
+   but swapped from the pinboard "pin-up" bounce to the cleaner drift-in
+   keyframe that already lives in theme-core.css. Spec §3 allows existing
+   page-load reveals; this stays as a subtle entry. */
+.polaroid.fresh { animation: drift-in 240ms ease-out both; }
 
-/* Login hero — washi-taped sign-in card on the corkboard */
+/* Login hero — class kept (login.html has .login-shell.cork-hero). A
+   plain centred flex container; the .login-shell grid layout in app.css
+   provides the actual two-column hero/sign-in split. */
 .cork-hero {
   min-height: 100vh;
   display: flex;
@@ -106,16 +103,6 @@
   width: min(440px, 100%);
   position: relative;
 }
-.cork-hero .card::before {
-  /* a strip of washi tape across the top of the sign-in card */
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: 30%;
-  width: 80px;
-  height: 18px;
-  background: repeating-linear-gradient(45deg,
-    var(--accent-3) 0 6px,
-    rgba(245, 158, 11, 0.5) 6px 12px);
-  transform: rotate(-4deg);
-}
+/* The washi-ribbon pseudo-element on the sign-in card is removed (spec
+   has no equivalent decorative ribbon). The class still resolves; the
+   ::before rule is just absent. */
