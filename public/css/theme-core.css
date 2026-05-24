@@ -55,30 +55,32 @@
   --shadow-md: 0 1px 0 rgba(42, 31, 18, 0.04), 0 8px 24px rgba(42, 31, 18, 0.06);
   --shadow-lg: 0 1px 0 rgba(42, 31, 18, 0.04), 0 16px 44px rgba(42, 31, 18, 0.10);
 
-  /* Status colours — shared across all apps */
-  --ok:    #2A5A2A;
+  /* Status colours — shared across all apps. --ok / --ok-bg shifted
+     per forestbuild-spec.md §1.3 so success green stays visibly
+     distinct from the forest --accent. */
+  --ok:    #1E5A3A;
   --warn:  #B8780A;
   --err:   #B4232A;
   --info:  #2D5FAA;
-  --ok-bg:   #DCE9DA;
+  --ok-bg:   #D7E8DC;
   --warn-bg: #F9E6C7;
   --err-bg:  #F8D7DA;
   --info-bg: #DCE5F4;
 
-  /* Palette defaults — overridden by theme-<app>.css. Defined here so the
-     components in section 4 are renderable even without an app overlay. */
-  --bg:        #FDF8EB;
-  --bg-warm:   #F4ECE0;
-  --surface:   #FFFFFF;
-  --border:    #E8D9C0;
-  --border-st: #C9B27A;
-  --ink:       #2A1F12;
-  --muted:     #8E6E4A;
-  --faint:     #B0916B;
-  --accent:    #6B4FE8;
-  --accent-on: #FFFFFF;
-  --accent-2:  #F5D87E;
-  --accent-3:  #FFCFB0;
+  /* Palette defaults — overridden by theme-<app>.css. Aligned with
+     forestbuild-spec.md §1.1 + §1.2. */
+  --bg:          #FDF8EB;
+  --bg-warm:     #F4ECE0;
+  --surface:     #FFFFFF;
+  --border:      #E8D9C0;
+  --border-st:   #C9B27A;
+  --ink:         #2A2118;
+  --muted:       #876641;
+  --faint:       #B0916B;
+  --accent:      #2E6F4E;
+  --accent-on:   #FFFFFF;
+  --accent-soft: #DEEBE2;
+  --accent-deep: #245C40;
 }
 
 /* ---------------------------------------------------------------------------
@@ -146,6 +148,14 @@ p { margin: 0 0 var(--s-3); }
 .card + .card { margin-top: var(--s-4); }
 .card-title { font-family: var(--serif); font-weight: 600; margin-bottom: var(--s-1); }
 
+.card {
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md);
+}
+
 /* --- Button --- */
 .btn {
   display: inline-flex;
@@ -153,8 +163,9 @@ p { margin: 0 0 var(--s-3); }
   justify-content: center;
   gap: var(--s-2);
   padding: 9px 18px;
+  min-height: 38px;
   border-radius: var(--r-pill);
-  border: 1.5px solid var(--border-st);
+  border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink);
   font-family: var(--sans);
@@ -162,21 +173,47 @@ p { margin: 0 0 var(--s-3); }
   font-size: 0.92rem;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 120ms ease, background 120ms ease;
+  transition: transform 120ms ease, filter 120ms ease,
+              box-shadow 120ms ease, border-color 120ms ease,
+              background 120ms ease, color 120ms ease;
 }
-.btn:hover { background: var(--bg-warm); transform: translateY(-1px); }
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  transform: translateY(-1px);
+}
 .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-on);
+  box-shadow: 0 1px 2px rgba(42, 31, 18, 0.12);
 }
-.btn-primary:hover { background: var(--accent); filter: brightness(0.95); }
-.btn-ghost { border-color: transparent; background: transparent; }
-.btn-ghost:hover { background: var(--bg-warm); }
+.btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-on);
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 31, 18, 0.16);
+}
+
+.btn-ghost {
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+.btn-ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  border-color: var(--accent);
+}
+
 .btn-danger { color: var(--err); border-color: var(--border-st); }
-.btn-danger:hover { background: var(--err-bg); }
-.btn-sm { padding: 5px 12px; font-size: 0.82rem; }
+.btn-danger:hover { background: var(--err-bg); border-color: var(--err); color: var(--err); }
+
+.btn-sm { padding: 5px 12px; min-height: 30px; font-size: 0.82rem; }
 .btn-block { width: 100%; }
 
 /* --- Field / input --- */
@@ -192,16 +229,23 @@ input[type="text"], input[type="email"], input[type="password"],
 input[type="number"], select, textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-input:focus, select:focus, textarea:focus, button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+input::placeholder, textarea::placeholder { color: var(--faint); }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+button:focus-visible, a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
 }
 
 /* --- Tag & pill --- */
@@ -360,5 +404,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .btn:hover { transform: none; }
+  .btn:hover, .btn-primary:hover { transform: none; filter: none; }
+  .card:hover { transform: none; box-shadow: var(--shadow-md); }
+  .polaroid:hover { transform: none; }
 }
