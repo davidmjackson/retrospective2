@@ -745,3 +745,65 @@ Housekeeping:
 - Polish the Actions Report UI now that actions are real records.
 - Review card layout after adding the `Create action` button.
 - Merge `feature/separate-action-items` to `main` when accepted.
+
+## 2026-05-24 — forest-reskin-retro branch
+
+Re-skinned Retrospective to the forest accent (`#2E6F4E`) per
+`/var/www/signal/docs/forestbuild-spec.md`. Signal is already live on the
+forest palette at https://sprintsignal.uk; this brings Retrospective into
+the same colour family.
+
+### What changed
+- Palette: `--accent #2E6F4E`, `--bg-warm` cream `#F4ECE0` (the A11Y fix
+  for the past-retros list rows that were failing AA on the dark-tan
+  background), `--bg` cream `#FDF8EB`, `--surface #FFFFFF`. Added
+  `--accent-soft #DEEBE2` and `--accent-deep #245C40`. Shifted `--ok` to
+  `#1E5A3A` and `--ok-bg` to `#D7E8DC` per spec §1.3 so success green
+  stays visibly distinct from the forest accent. Dropped `--accent-2`
+  (was purple) and the four `--pin-*` colour tokens.
+- Pinboard layer **neutralised, not deleted**: per the user's directive,
+  the `.cork-bg / .washi / .polaroid / .pin / .cork-hero` class names stay
+  defined in `theme-retro.css` so `client.js` (which still constructs
+  `<li class="card polaroid">` + `<div class="pin pin-*">`) and the HTML
+  (which still has `body class="… cork-bg"` and `.cork-hero` on the login
+  shell) continue working without edits. But the rule contents are
+  rewritten so nothing renders as a corkboard / washi tape / pushpin /
+  paper-polaroid — `.cork-bg` is plain cream, `.washi` and `.pin` are
+  `display: none`, `.polaroid` is a spec §2.5 card, `.polaroid.fresh`
+  switches from the `pin-up` bounce to the cleaner `drift-in` entry.
+- Component upgrades in `theme-core.css` per spec §2: `.btn-primary` gets
+  the canonical 1px/2px shadow at rest and the `brightness(1.08) +
+  translateY(-1px) + 4px shadow` hover lift; input vs button focus rings
+  split per §2.1 / §2.4; `.card:hover` halo per §2.5; reduced-motion
+  opt-out extended to cover the new lifts on `.btn-primary` / `.card` /
+  `.polaroid`.
+- `app.css` purple cleanup: rewrote `.primary-btn / #timer-start` and
+  `.icon-btn-save` from purple gradients to solid forest with the spec
+  §2.1 hover lift; repainted ten decorative purple tints (lobby radial,
+  instruction banner, timer readout, avatar, key badge, kanban col 1,
+  retro-item hover, etc.) to `accent-soft / accent-deep / forest rgba`
+  equivalents; aligned `.status.online / .pill.open / .retro-status.open`
+  with spec §2.6 (`accent-soft` bg, `accent-deep` text).
+
+### Verified
+- `npm test` — ws-operations integration test + 8 theme-contrast tests
+  all pass.
+- `npm run test:e2e` — all 5 Playwright specs pass (no visual screenshot
+  assertions in this suite, so the colour change required no snapshot
+  refresh).
+- `npm audit --omit=dev` — 3 moderate pre-existing advisories in the
+  qs/body-parser/express dependency chain (not introduced by this branch).
+- Dev server smoke: `/` returns 200, `/lobby` returns 200, served CSS
+  contains the new forest tokens.
+
+### Branch / commits
+- Branch: `forest-reskin-retro`
+- `c3cef4e` test: update theme-contrast fixture to forest palette
+- `6528e99` Retrospective: re-skin to forest accent per forestbuild-spec.md
+
+### Next
+- User does the visual sweep (login, lobby, open retro, actions, admin)
+  on return to confirm the pinboard look is gone and the forest accent
+  reads correctly.
+- Merge PR, then prod-pull on the IONOS box per `docs/deployment.md`.
+- Plan: `docs/superpowers/plans/2026-05-24-retrospective-forest-reskin.md`.
