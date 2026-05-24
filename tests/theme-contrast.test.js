@@ -6,29 +6,29 @@ const assert = require("node:assert/strict");
 const { contrastRatio, meetsAA } = require("../lib/contrast");
 
 const RETRO = {
-  bg:        "#FDF4E3",
-  "bg-warm": "#E8C9A0",
-  surface:   "#FDF8EB",
-  ink:       "#2A1F12",
-  muted:     "#8B5E36",
-  accent:    "#C8252A",
-  "accent-on": "#FFFFFF",
-  "accent-2": "#5B35D5",
-  "accent-3": "#F59E0B",
-  ok:   "#2A5A2A",
-  err:  "#B4232A"
+  bg:           "#FDF8EB",
+  "bg-warm":    "#F4ECE0",
+  surface:      "#FFFFFF",
+  ink:          "#2A1F12",
+  muted:        "#8B5E36",
+  accent:       "#2E6F4E",
+  "accent-on":  "#FFFFFF",
+  "accent-soft":"#DEEBE2",
+  "accent-deep":"#245C40",
+  ok:        "#1E5A3A",
+  "ok-bg":   "#D7E8DC",
+  err:       "#B4232A"
 };
 
 const PAIRS = [
-  ["ink",   "bg"],
-  ["ink",   "bg-warm"],
-  ["ink",   "surface"],
-  ["muted", "bg"],
-  ["accent-on", "accent"],
-  ["accent-on", "accent-2"],
-  ["ink",   "accent-3"],
-  ["ok",    "bg"],
-  ["err",   "bg"]
+  ["ink",         "bg"],
+  ["ink",         "bg-warm"],
+  ["ink",         "surface"],
+  ["muted",       "bg"],
+  ["accent-on",   "accent"],
+  ["accent-deep", "accent-soft"],
+  ["ok",          "ok-bg"],
+  ["err",         "bg"]
 ];
 
 for (const [fg, bg] of PAIRS) {
