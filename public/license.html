@@ -7,17 +7,24 @@
     <link rel="stylesheet" href="/css/theme-core.css" />
     <link rel="stylesheet" href="/css/theme-retro.css" />
     <link rel="stylesheet" href="/css/app.css" />
+    <link rel="stylesheet" href="/css/breathing-waves.css" />
   </head>
   <body class="page legal-page">
-    <main class="legal-shell">
-      <section class="panel legal-panel">
-        <p class="eyebrow">Licence</p>
+    <header class="header-band" data-breathing-waves data-wave-palette="retro">
+      <canvas></canvas>
+      <div class="header-content">
+        <p class="eyebrow">Legal</p>
         <p class="brand">
           <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
           <span>Retrospective</span>
         </p>
-        <h1>Retrospective App Proprietary Free-Use Licence</h1>
-        <p class="legal-updated">Copyright (c) 2026 David Jackson. All rights reserved.</p>
+        <h1 class="header-title">Retrospective App Proprietary Free-Use Licence</h1>
+        <p class="header-subtitle legal-updated">Copyright (c) 2026 David Jackson. All rights reserved.</p>
+      </div>
+    </header>
+
+    <main class="legal-shell">
+      <section class="panel legal-panel">
 
         <h2>Developer and Owner</h2>
         <p>
@@ -77,5 +84,6 @@
         <a class="secondary-btn legal-back-link" href="/">Return to sign in</a>
       </section>
     </main>
+    <script src="breathing-waves.js"></script>
   </body>
 </html>

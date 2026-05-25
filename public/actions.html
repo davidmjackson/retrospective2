@@ -8,20 +8,28 @@
     <link rel="stylesheet" href="/css/theme-core.css" />
     <link rel="stylesheet" href="/css/theme-retro.css" />
     <link rel="stylesheet" href="/css/app.css" />
+    <link rel="stylesheet" href="/css/breathing-waves.css" />
   </head>
   <body class="page actions-page">
-    <header class="app-header page-header">
-      <div>
+    <header class="topbar">
+      <span class="topbar-lead">
         <a class="back-link" href="/lobby">Back to Lobby</a>
         <p class="brand">
           <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
           <span>Retrospective</span>
         </p>
-        <h1>Actions Report</h1>
-        <p>Track actions across every team and retrospective.</p>
-      </div>
+      </span>
       <div class="header-actions">
         <div class="status-pill" id="actions-count">Loading actions...</div>
+      </div>
+    </header>
+
+    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
+      <canvas></canvas>
+      <div class="header-content">
+        <p class="eyebrow">Report</p>
+        <h1 class="header-title">Actions Report</h1>
+        <p class="header-subtitle">Track actions across every team and retrospective.</p>
       </div>
     </header>
 
@@ -35,5 +43,6 @@
 
     <script src="vendor/dragula/dragula.min.js"></script>
     <script src="actions.js"></script>
+    <script src="breathing-waves.js"></script>
   </body>
 </html>

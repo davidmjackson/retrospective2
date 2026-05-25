@@ -7,12 +7,18 @@
     <link rel="stylesheet" href="/css/theme-core.css" />
     <link rel="stylesheet" href="/css/theme-retro.css" />
     <link rel="stylesheet" href="/css/app.css" />
+    <link rel="stylesheet" href="/css/breathing-waves.css" />
   </head>
   <body class="page login-page cork-bg">
     <main class="login-shell cork-hero">
       <section class="login-hero">
-        <p class="eyebrow">Retrospective Hub</p>
-        <h1>Run focused retros with your team.</h1>
+        <header class="header-band login-band" data-breathing-waves data-wave-palette="retro">
+          <canvas></canvas>
+          <div class="header-content">
+            <p class="eyebrow">Retrospective Hub</p>
+            <h1 class="header-title">Run focused retros with your team.</h1>
+          </div>
+        </header>
         <p>
           Capture feedback, vote on what matters, and carry actions forward from
           one quiet workspace.
@@ -81,5 +87,6 @@
       <a href="/license">Licence</a>
     </footer>
     <script src="login.js"></script>
+    <script src="breathing-waves.js"></script>
   </body>
 </html>

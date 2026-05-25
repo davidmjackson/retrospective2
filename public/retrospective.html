@@ -8,23 +8,17 @@
     <link rel="stylesheet" href="/css/theme-core.css" />
     <link rel="stylesheet" href="/css/theme-retro.css" />
     <link rel="stylesheet" href="/css/app.css" />
+    <link rel="stylesheet" href="/css/breathing-waves.css" />
   </head>
   <body class="retro-page cork-bg">
-    <header class="app-header session-header">
-      <div class="session-title">
+    <header class="topbar">
+      <span class="topbar-lead">
+        <a class="menu-link" href="/lobby" aria-label="Back to Lobby">☰</a>
         <p class="brand">
           <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
           <span>Retrospective</span>
         </p>
-        <a class="menu-link" href="/lobby" aria-label="Back to Lobby">☰</a>
-        <div>
-          <div class="title-row">
-            <h1 id="retro-title">Retrospective</h1>
-            <div class="retro-status" id="retro-status"></div>
-          </div>
-          <p id="retro-meta">Loading retro details...</p>
-        </div>
-      </div>
+      </span>
       <div class="header-actions">
         <div class="status" id="status">Connecting...</div>
         <button type="button" class="secondary-btn" id="show-instructions">
@@ -32,6 +26,18 @@
         </button>
         <a class="secondary-btn" href="/lobby">Lobby</a>
         <a class="primary-btn" href="/actions">Actions</a>
+      </div>
+    </header>
+
+    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
+      <canvas></canvas>
+      <div class="header-content">
+        <p class="eyebrow">Session</p>
+        <div class="title-row">
+          <h1 class="header-title" id="retro-title">Retrospective</h1>
+          <div class="retro-status" id="retro-status"></div>
+        </div>
+        <p class="header-subtitle" id="retro-meta">Loading retro details...</p>
       </div>
     </header>
 
@@ -342,5 +348,6 @@
 
     <script src="vendor/dragula/dragula.min.js"></script>
     <script src="client.js"></script>
+    <script src="breathing-waves.js"></script>
   </body>
 </html>
