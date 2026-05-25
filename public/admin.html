@@ -7,20 +7,25 @@
     <link rel="stylesheet" href="/css/theme-core.css" />
     <link rel="stylesheet" href="/css/theme-retro.css" />
     <link rel="stylesheet" href="/css/app.css" />
+    <link rel="stylesheet" href="/css/breathing-waves.css" />
   </head>
   <body class="page admin-page">
-    <header class="app-header page-header">
-      <div>
-        <p class="eyebrow">Admin</p>
-        <p class="brand">
-          <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
-          <span>Retrospective</span>
-        </p>
-        <h1>Team Keys</h1>
-        <p id="admin-summary">Loading admin...</p>
-      </div>
+    <header class="topbar">
+      <p class="brand">
+        <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
+        <span>Retrospective</span>
+      </p>
       <div class="header-actions">
         <button type="button" class="link-btn" id="logout-btn">Log out</button>
+      </div>
+    </header>
+
+    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
+      <canvas></canvas>
+      <div class="header-content">
+        <p class="eyebrow">Workspace</p>
+        <h1 class="header-title">Team Keys</h1>
+        <p class="header-subtitle" id="admin-summary">Loading admin...</p>
       </div>
     </header>
 
@@ -111,5 +116,6 @@
     </dialog>
 
     <script src="admin.js"></script>
+    <script src="breathing-waves.js"></script>
   </body>
 </html>

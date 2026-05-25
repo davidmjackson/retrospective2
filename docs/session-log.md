@@ -807,3 +807,67 @@ the same colour family.
   reads correctly.
 - Merge PR, then prod-pull on the IONOS box per `docs/deployment.md`.
 - Plan: `docs/superpowers/plans/2026-05-24-retrospective-forest-reskin.md`.
+
+## 2026-05-25 — feat-breathing-waves-header branch
+
+Rolled the breathing-waves header band (already shipped on Signal at
+https://sprintsignal.uk) into Retrospective using the `retro` palette
+baked into `breathing-waves.js`. Handover doc:
+`breathing-waves-handover.md` (root); source spec lives in
+`/var/www/signal/docs/done/breathing-waves-header-background.md`.
+
+### What changed
+- New assets, copied verbatim from Signal so the palettes file stays
+  aligned across all three apps:
+  - `public/css/breathing-waves.css`
+  - `public/breathing-waves.js` (flat path to match Retro's existing
+    `public/*.js` convention, not Signal's `public/js/` subdir)
+- Six pages wrapped. Each picks up a slim `.topbar` (brand + actions)
+  plus a `<header class="header-band">` (eyebrow + title + subtitle)
+  carrying the animated canvas:
+  - `lobby.html`     — eyebrow "Workspace", `role="none"`
+  - `admin.html`     — eyebrow "Workspace", `role="none"`
+  - `actions.html`   — eyebrow "Report",    `role="none"`
+  - `retrospective.html` — eyebrow "Session", `role="none"`,
+    `id="retro-title"` preserved on the new `.header-title` (client.js
+    reads it via `document.getElementById`)
+  - `license.html`   — eyebrow "Legal", no `role="none"` (no topbar →
+    implicit `banner` is the correct landmark)
+  - `login.html`     — band nested in `.login-hero` as a hero variant
+    (`.login-band` overrides keep the existing oversized hero typography
+    and drop the cream background so the band blends with the hero card)
+- `app.css`: added `.topbar-lead` (left-side cluster for back-link +
+  brand on `actions` / `retrospective`) and `.login-band` overrides.
+  Reused the existing `.topbar` from `theme-core.css` and `.title-row`
+  already in `app.css`.
+- New Playwright spec `tests/e2e/header-waves.spec.js` covers the
+  public (`/`, `/license`), admin, and facilitator (lobby + actions)
+  paths. Filters the expected `/api/me` 401 emitted by `login.js` on
+  the unauthenticated home page so it doesn't pollute the error budget.
+
+### Verified
+- `node --check public/breathing-waves.js tests/e2e/header-waves.spec.js`
+  — both clean.
+- `git diff --check` — no whitespace issues.
+- `npm test` — 8 theme-contrast + ws-operations pass.
+- `npm run test:e2e` — all 8 specs pass (3 new + 5 existing). Existing
+  `page-shell.spec.js` still green, confirming the header restructure
+  didn't break the lobby/admin/actions/retrospective interaction tests.
+- `npm audit --omit=dev` — same 3 moderate pre-existing qs/body-parser/
+  express advisories as the prior session; nothing new from this branch.
+- Dev server smoke: `/`, `/license`, `/lobby`, `/admin`, `/actions` all
+  return 200; `/css/breathing-waves.css` and `/breathing-waves.js`
+  served from the running `node server.js` on port 3001.
+
+### Branch / commits
+- Branch: `feat-breathing-waves-header`
+- (commit hash filled at commit time)
+
+### Next
+- User does the visual sweep on the dev URL: confirm waves drift behind
+  each page title, the title remains AA-legible, and the login hero
+  doesn't feel shrunk by the new band typography.
+- Open PR per AGENTS.md (feature branch + PR, not direct-to-main).
+- After merge, prod-pull on the IONOS box per `docs/deployment.md`.
+- Scrum Poker rollout (the third app in the breathing-waves trio) is
+  still outstanding — same handover doc, palette `poker`.
