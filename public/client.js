@@ -66,7 +66,7 @@ const columnLabels = {
 };
 
 const params = new URLSearchParams(window.location.search);
-const retroId = params.get("id");
+const retroId = params.get("retroId");
 
 let currentState = {
   columns: {
@@ -111,10 +111,7 @@ if (!retroId) {
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem("retroUserName");
-    localStorage.removeItem("retroUserRole");
-    localStorage.removeItem("retroUserTeam");
-    window.location.href = "/";
+    window.location.reload();
     return true;
   }
   return false;
@@ -748,9 +745,13 @@ async function loadRetroMeta() {
 
 function connectSocket() {
   const socketProtocol = location.protocol === "https:" ? "wss" : "ws";
-  const query = new URLSearchParams({ retroId });
+  const query = new URLSearchParams({
+    retroId,
+    name: username || "Anonymous",
+    role: userRole
+  });
   socket = new WebSocket(
-    `${socketProtocol}://${location.host}?${query.toString()}`
+    `${socketProtocol}://${location.host}/ws?${query.toString()}`
   );
 
   socket.addEventListener("open", () => {
@@ -759,22 +760,18 @@ function connectSocket() {
     socket.send(JSON.stringify({ type: "hello", user: username }));
   });
 
-  socket.addEventListener("close", () => {
+  socket.addEventListener("close", (event) => {
     statusEl.textContent = "Offline";
     statusEl.classList.remove("online");
+    if (event.code === 4401 || event.code === 1008) {
+      window.location.reload();
+    }
   });
 
   socket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "error") {
-      if (data.message === "Unauthorized.") {
-        localStorage.removeItem("retroUserName");
-        localStorage.removeItem("retroUserRole");
-        localStorage.removeItem("retroUserTeam");
-        window.location.href = "/";
-      } else {
-        window.location.href = "/lobby";
-      }
+      window.location.href = "/lobby";
       return;
     }
     if (data.type === "init" || data.type === "update") {
@@ -849,33 +846,19 @@ function connectSocket() {
   });
 }
 
-async function loadSession() {
-  const response = await fetch("/api/session", { credentials: "same-origin" });
-  if (!response.ok) {
-    handleUnauthorized(response);
-    return null;
-  }
-  const data = await response.json();
-  if (!data.user) {
-    handleUnauthorized({ status: 401 });
-    return null;
-  }
-  username = data.user.name || "Anonymous";
-  userRole = data.user.role || "participant";
-  userTeam = data.user.team || "";
+function loadSession() {
+  username = localStorage.getItem("retroUserName") || "Anonymous";
+  userRole =
+    localStorage.getItem("retroUserRole") === "facilitator"
+      ? "facilitator"
+      : "participant";
   isFacilitator = userRole === "facilitator";
   applyReadOnlyState();
-  localStorage.setItem("retroUserName", username);
-  localStorage.setItem("retroUserRole", userRole);
-  localStorage.setItem("retroUserTeam", userTeam);
-  return data.user;
+  return { name: username, role: userRole };
 }
 
 async function init() {
-  const session = await loadSession();
-  if (!session) {
-    return;
-  }
+  loadSession();
   await loadRetroMeta();
   connectSocket();
 }

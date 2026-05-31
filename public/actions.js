@@ -16,10 +16,7 @@ let dragInstance = null;
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem("retroUserName");
-    localStorage.removeItem("retroUserRole");
-    localStorage.removeItem("retroUserTeam");
-    window.location.href = "/";
+    window.location.reload();
     return true;
   }
   return false;
@@ -245,31 +242,17 @@ async function loadActions() {
   renderBoard(actions);
 }
 
-async function loadSession() {
-  const response = await fetch("/api/session", { credentials: "same-origin" });
-  if (!response.ok) {
-    handleUnauthorized(response);
-    return null;
-  }
-  const data = await response.json();
-  if (!data.user) {
-    handleUnauthorized({ status: 401 });
-    return null;
-  }
-  userName = data.user.name || "";
-  userRole = data.user.role || "participant";
-  userTeam = data.user.team || "";
-  localStorage.setItem("retroUserName", userName);
-  localStorage.setItem("retroUserRole", userRole);
-  localStorage.setItem("retroUserTeam", userTeam);
-  return data.user;
+function loadSession() {
+  userName = localStorage.getItem("retroUserName") || "";
+  userRole =
+    localStorage.getItem("retroUserRole") === "facilitator"
+      ? "facilitator"
+      : "participant";
+  return { name: userName, role: userRole };
 }
 
 async function init() {
-  const session = await loadSession();
-  if (!session) {
-    return;
-  }
+  loadSession();
   await loadActions();
 }
 
