@@ -48,45 +48,24 @@
         </div>
       </section>
 
-      <section class="panel key-panel" id="team-key-panel" hidden>
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">Team Access</p>
-            <h2>Share This Team Key</h2>
-            <p class="key-text">
-              Team <span id="team-key-team"></span> key:
-              <span class="key-value" id="team-key-value"></span>
-            </p>
-          </div>
-          <div class="header-actions">
-            <button type="button" class="secondary-btn" id="team-key-copy">
-              Copy
-            </button>
-            <button type="button" class="link-btn" id="team-key-dismiss">
-              Dismiss
-            </button>
-          </div>
-        </div>
-        <p class="key-warning" role="alert">
-          Copy and share this key now. It is not stored anywhere you can read
-          it again - once you leave this page it cannot be shown to you, and a
-          lost key can only be replaced by an admin rotating the team.
-        </p>
-      </section>
-
-      <section class="panel create-team-panel" id="create-team-panel" hidden>
-        <h2>Create New Team</h2>
-        <p class="panel-copy">
-          Generate a team key for a new group. Share the key with that team so
-          they can sign in.
-        </p>
-        <form id="create-team-form" class="form-grid">
+      <section class="panel session-panel">
+        <h2>Your Session</h2>
+        <form class="form-grid" id="session-form" onsubmit="return false;">
           <label class="field">
-            <span>Team Name</span>
-            <input id="new-team-name" type="text" placeholder="Team name" required />
+            <span>Your Name</span>
+            <input id="display-name" type="text" placeholder="Your name" maxlength="80" />
           </label>
-          <p id="create-team-error" class="error-text" role="alert"></p>
-          <button type="submit" class="primary-btn">Create Team Key</button>
+          <label class="field">
+            <span>Role</span>
+            <select id="role-select">
+              <option value="participant">Participant</option>
+              <option value="facilitator">Facilitator</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Team</span>
+            <select id="team-select"></select>
+          </label>
         </form>
       </section>
 
@@ -97,7 +76,6 @@
             <label for="sort-select">Sort by</label>
             <select id="sort-select">
               <option value="date">Newest</option>
-              <option value="team">Team</option>
             </select>
           </div>
         </div>
@@ -111,10 +89,6 @@
             <span>Title</span>
             <input id="create-title" type="text" placeholder="Sprint 42 Retro" required />
           </label>
-          <label class="field">
-            <span>Team</span>
-            <input id="create-team" type="text" placeholder="Team name" required />
-          </label>
           <button type="submit" class="primary-btn">Create Retro</button>
         </form>
       </section>
@@ -122,5 +96,6 @@
 
     <script src="lobby.js"></script>
     <script src="breathing-waves.js"></script>
+    <script src="/auth-client/heartbeat.js"></script>
   </body>
 </html>

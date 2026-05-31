@@ -1,36 +1,49 @@
+// Lobby: hub identity (via /api/me) + self-declared name/role + team picker.
 const userSummary = document.getElementById("user-summary");
 const retroList = document.getElementById("retro-list");
 const sortSelect = document.getElementById("sort-select");
-const createPanel = document.getElementById("create-panel");
 const createForm = document.getElementById("create-form");
 const createTitle = document.getElementById("create-title");
-const createTeam = document.getElementById("create-team");
-const createTeamPanel = document.getElementById("create-team-panel");
-const createTeamForm = document.getElementById("create-team-form");
-const newTeamName = document.getElementById("new-team-name");
-const createTeamError = document.getElementById("create-team-error");
+const nameInput = document.getElementById("display-name");
+const roleSelect = document.getElementById("role-select");
+const teamSelect = document.getElementById("team-select");
 const logoutBtn = document.getElementById("logout-btn");
-const teamKeyPanel = document.getElementById("team-key-panel");
-const teamKeyValue = document.getElementById("team-key-value");
-const teamKeyTeam = document.getElementById("team-key-team");
-const teamKeyCopy = document.getElementById("team-key-copy");
-const teamKeyDismiss = document.getElementById("team-key-dismiss");
 
-let userName = "";
-let userRole = "participant";
-let userTeam = "";
+let teams = [];
+let currentTeamId = null;
+let retros = [];
 let lobbySocket = null;
 
-// Older builds persisted the team key in localStorage; it is no longer stored.
-localStorage.removeItem("retroTeamKey");
-localStorage.removeItem("retroTeamKeyTeam");
+function getDisplayName() {
+  return (nameInput && nameInput.value.trim()) || localStorage.getItem("retroUserName") || "";
+}
+
+function getSelectedRole() {
+  const r = roleSelect ? roleSelect.value : "";
+  return r === "facilitator" ? "facilitator" : "participant";
+}
+
+if (nameInput) {
+  nameInput.value = localStorage.getItem("retroUserName") || "";
+  nameInput.addEventListener("input", () => {
+    localStorage.setItem("retroUserName", nameInput.value.trim());
+  });
+}
+if (roleSelect) {
+  roleSelect.value = localStorage.getItem("retroUserRole") || "participant";
+  roleSelect.addEventListener("change", () => {
+    localStorage.setItem("retroUserRole", roleSelect.value);
+  });
+}
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    window.location.href = "/auth/logout";
+  });
+}
 
 function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem("retroUserName");
-    localStorage.removeItem("retroUserRole");
-    localStorage.removeItem("retroUserTeam");
-    window.location.href = "/";
+    window.location.reload();
     return true;
   }
   return false;
@@ -44,44 +57,18 @@ async function fetchWithAuth(url, options = {}) {
   return response;
 }
 
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
-    fetch("/api/logout", { method: "POST" });
-    localStorage.removeItem("retroUserName");
-    localStorage.removeItem("retroUserRole");
-    localStorage.removeItem("retroUserTeam");
-    window.location.href = "/";
-  });
-}
-
-let retros = [];
-
 function formatDate(value) {
   if (!value) {
     return "Unknown date";
   }
-  const date = new Date(value);
-  return date.toLocaleString();
-}
-
-function sortRetros(items, mode) {
-  const copy = [...items];
-  if (mode === "team") {
-    copy.sort((a, b) => {
-      const teamCompare = a.team.localeCompare(b.team);
-      if (teamCompare !== 0) {
-        return teamCompare;
-      }
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-    return copy;
-  }
-  return copy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return new Date(value).toLocaleString();
 }
 
 function renderRetros() {
   retroList.innerHTML = "";
-  const sorted = sortRetros(retros, sortSelect.value);
+  const sorted = [...retros].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
   if (!sorted.length) {
     const empty = document.createElement("li");
     empty.className = "retro-empty";
@@ -98,7 +85,7 @@ function renderRetros() {
     const title = document.createElement("h3");
     title.textContent = retro.title;
     const meta = document.createElement("p");
-    meta.textContent = `${retro.team} · ${formatDate(retro.createdAt)}`;
+    meta.textContent = formatDate(retro.createdAt);
     info.appendChild(title);
     info.appendChild(meta);
 
@@ -111,11 +98,11 @@ function renderRetros() {
 
     const openLink = document.createElement("a");
     openLink.className = "primary-btn";
-    openLink.href = `/retrospective?id=${encodeURIComponent(retro.id)}`;
+    openLink.href = `/retrospective?retroId=${encodeURIComponent(retro.id)}`;
     openLink.textContent = "Open";
     actions.appendChild(openLink);
 
-    if (userRole === "facilitator" && !retro.closed) {
+    if (!retro.closed) {
       const closeBtn = document.createElement("button");
       closeBtn.type = "button";
       closeBtn.className = "secondary-btn";
@@ -134,7 +121,12 @@ function renderRetros() {
 }
 
 async function loadRetros() {
-  const response = await fetchWithAuth("/api/retros");
+  if (!currentTeamId) {
+    return;
+  }
+  const response = await fetchWithAuth(
+    `/api/retros?teamId=${encodeURIComponent(currentTeamId)}`
+  );
   if (!response) {
     return;
   }
@@ -144,174 +136,104 @@ async function loadRetros() {
 }
 
 function connectLobbySocket() {
-  const socketProtocol = location.protocol === "https:" ? "wss" : "ws";
-  const query = new URLSearchParams({ view: "lobby" });
-  lobbySocket = new WebSocket(
-    `${socketProtocol}://${location.host}?${query.toString()}`
-  );
-
+  if (!currentTeamId) {
+    return;
+  }
+  if (lobbySocket) {
+    try {
+      lobbySocket.close();
+    } catch (err) {
+      // ignore
+    }
+  }
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const query = new URLSearchParams({
+    view: "lobby",
+    teamId: currentTeamId,
+    name: getDisplayName() || "Anonymous",
+    role: getSelectedRole()
+  });
+  lobbySocket = new WebSocket(`${proto}://${location.host}/ws?${query.toString()}`);
   lobbySocket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === "error") {
-      if (data.message === "Unauthorized.") {
-        handleUnauthorized({ status: 401 });
-        return;
-      }
-      window.location.href = "/lobby";
-      return;
-    }
     if (data.type === "retros") {
       retros = data.retros || [];
       renderRetros();
     }
   });
-}
-
-sortSelect.addEventListener("change", renderRetros);
-
-function revealTeamKey(teamName, key) {
-  if (!teamKeyPanel || !teamKeyValue || !teamKeyTeam) {
-    return;
-  }
-  teamKeyValue.textContent = key;
-  teamKeyTeam.textContent = teamName;
-  teamKeyPanel.hidden = false;
-  teamKeyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-if (createTeamForm) {
-  createTeamForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (createTeamError) {
-      createTeamError.textContent = "";
-    }
-    const team = newTeamName ? newTeamName.value.trim() : "";
-    if (!team) {
-      return;
-    }
-    const response = await fetchWithAuth("/api/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ team })
-    });
-    if (!response) {
-      return;
-    }
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (createTeamError) {
-        createTeamError.textContent = data.error || "Unable to create team.";
-      }
-      return;
-    }
-    if (newTeamName) {
-      newTeamName.value = "";
-    }
-    revealTeamKey(data.team, data.teamKey);
-  });
-}
-
-if (teamKeyCopy) {
-  teamKeyCopy.addEventListener("click", async () => {
-    const value = teamKeyValue ? teamKeyValue.textContent.trim() : "";
-    if (!value) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(value);
-      teamKeyCopy.textContent = "Copied";
-      setTimeout(() => {
-        teamKeyCopy.textContent = "Copy";
-      }, 1500);
-    } catch (err) {
-      teamKeyCopy.textContent = "Copy";
+  lobbySocket.addEventListener("close", (event) => {
+    if (event.code === 4401 || event.code === 1008) {
+      window.location.reload();
     }
   });
 }
 
-if (teamKeyDismiss) {
-  teamKeyDismiss.addEventListener("click", () => {
-    if (teamKeyPanel) {
-      teamKeyPanel.hidden = true;
-    }
-    if (teamKeyValue) {
-      teamKeyValue.textContent = "";
-    }
-  });
+if (sortSelect) {
+  sortSelect.addEventListener("change", renderRetros);
 }
 
 if (createForm) {
   createForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = createTitle.value.trim();
-    const team = createTeam.value.trim();
-    if (!title || !team) {
+    if (!title || !currentTeamId) {
       return;
     }
     const response = await fetchWithAuth("/api/retros", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, team })
+      body: JSON.stringify({ title, teamId: currentTeamId })
     });
-    if (!response) {
-      return;
-    }
-    if (!response.ok) {
+    if (!response || !response.ok) {
       return;
     }
     const data = await response.json();
-    const retroId = data.retro?.id;
+    const retroId = data.retro && data.retro.id;
     if (retroId) {
-      window.location.href = `/retrospective?id=${encodeURIComponent(retroId)}`;
+      window.location.href = `/retrospective?retroId=${encodeURIComponent(retroId)}`;
     } else {
       await loadRetros();
     }
   });
 }
 
-async function loadSession() {
-  const response = await fetch("/api/session", { credentials: "same-origin" });
-  if (!response.ok) {
-    handleUnauthorized(response);
-    return null;
+function onTeamChange() {
+  currentTeamId = teamSelect.value || null;
+  if (currentTeamId) {
+    localStorage.setItem("retroTeamId", currentTeamId);
   }
-  const data = await response.json();
-  if (!data.user) {
-    handleUnauthorized({ status: 401 });
-    return null;
-  }
-  userName = data.user.name || "";
-  userRole = data.user.role || "participant";
-  userTeam = data.user.team || "";
-  localStorage.setItem("retroUserName", userName);
-  localStorage.setItem("retroUserRole", userRole);
-  localStorage.setItem("retroUserTeam", userTeam);
-  return data.user;
+  loadRetros();
+  connectLobbySocket();
 }
 
 async function init() {
-  const session = await loadSession();
-  if (!session) {
+  const response = await fetch("/api/me", { credentials: "same-origin" });
+  if (!response.ok) {
+    handleUnauthorized(response);
     return;
   }
-  userSummary.textContent = `${userName} · ${userRole} · ${userTeam}`;
-  if (userRole === "admin") {
-    window.location.href = "/admin";
+  const data = await response.json();
+  teams = data.teams || [];
+  if (!teams.length) {
+    userSummary.textContent = "You are not a member of any team yet.";
     return;
   }
-  if (userRole !== "facilitator") {
-    createPanel.style.display = "none";
-    if (createTeamPanel) {
-      createTeamPanel.hidden = true;
-    }
-  } else if (userTeam) {
-    if (createTeamPanel) {
-      createTeamPanel.hidden = false;
-    }
-    createTeam.value = userTeam;
-    createTeam.disabled = true;
-  }
-  await loadRetros();
+  teamSelect.innerHTML = "";
+  teams.forEach((team) => {
+    const opt = document.createElement("option");
+    opt.value = team.id;
+    opt.textContent = team.name;
+    teamSelect.appendChild(opt);
+  });
+  const saved = localStorage.getItem("retroTeamId");
+  currentTeamId = teams.some((team) => team.id === saved) ? saved : teams[0].id;
+  teamSelect.value = currentTeamId;
+  teamSelect.addEventListener("change", onTeamChange);
+
+  const name = getDisplayName();
+  userSummary.textContent = name ? `Signed in as ${name}` : "Enter your name to begin";
+
+  loadRetros();
   connectLobbySocket();
 }
 
