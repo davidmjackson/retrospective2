@@ -3,7 +3,7 @@ require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
 const crypto = require("crypto");
 const http = require("http");
 const express = require("express");
-const { WebSocketServer } = require("ws");
+const { WebSocketServer, WebSocket } = require("ws");
 const {
   normalizeRetro,
   openDatabase,
@@ -16,19 +16,26 @@ const {
   saveRetros,
   seedFromJsonIfPresent,
   applyRetention,
-  getTeamByName,
-  createTeam,
-  rotateTeamKey,
-  verifyTeamKey,
-  ensureAdminTeam,
-  listTeams,
-  deleteTeamById,
-  getTeamById
+  createRetroRow,
+  getRetroById,
+  getRetrosForTeamId
 } = require("./db");
+const { createAuthClient } = require("@suite/auth-client");
+const { authenticateUpgrade } = require("./lib/upgradeAuth");
+const { teamIdInTeams, boardTeamAllowed } = require("./lib/teamAccess");
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+
+const auth = createAuthClient({
+  appName: process.env.APP_NAME || "retro",
+  hubBaseUrl: process.env.HUB_BASE_URL,
+  hubApiKey: process.env.HUB_API_KEY,
+  cookieName: "retro_session",
+  cookieDomain: process.env.COOKIE_DOMAIN,
+  dbPath: process.env.APP_SESSIONS_DB || path.join(__dirname, "data", "retro-sessions.db")
+});
 
 const clients = new Map();
 const rooms = new Map();
@@ -90,11 +97,6 @@ function initializeState(callback) {
       console.warn("Failed to initialize database.");
       callback();
       return;
-    }
-    try {
-      ensureAdminTeam(db, adminKey);
-    } catch (adminErr) {
-      console.warn("Failed to ensure Admin team.");
     }
     loadRetros(db, (loadErr, retros) => {
       if (loadErr) {
@@ -972,28 +974,33 @@ function leaveRoom(retroId, ws) {
   }
 }
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
+// Auth hub integration
+app.use("/auth-client", auth.staticAssets);
+app.get("/auth/launch", auth.handleLaunch);
+app.get("/auth/logout", auth.handleLogout);
+app.post("/api/heartbeat", auth.handleHeartbeat);
+
+function requireEntitled(req, res, next) {
+  if (req.user && req.user.entitled) return next();
+  return res.redirect(302, `${auth._ctx.hubBaseUrl}/dashboard`);
+}
+
+app.get("/", auth.requireAuth, requireEntitled, (req, res) => {
+  res.redirect(302, "/lobby");
 });
 
-app.get("/lobby", (req, res) => {
+app.get("/lobby", auth.requireAuth, requireEntitled, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "lobby.html"));
 });
 
-app.get("/retrospective", (req, res) => {
+app.get("/retrospective", auth.requireAuth, requireEntitled, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "retrospective.html"));
 });
 
-app.get("/retro", (req, res) => {
-  res.redirect(302, "/retrospective");
-});
+app.get("/retro", (req, res) => res.redirect(302, "/retrospective"));
 
-app.get("/actions", (req, res) => {
+app.get("/actions", auth.requireAuth, requireEntitled, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "actions.html"));
-});
-
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
 app.get("/license", (req, res) => {
@@ -1001,262 +1008,23 @@ app.get("/license", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    uptimeSeconds: Math.floor(process.uptime())
-  });
+  res.json({ status: "ok", uptimeSeconds: Math.floor(process.uptime()) });
 });
 
-app.use(express.static(path.join(__dirname, "public"), { index: false }));
-
-app.post("/api/login", (req, res) => {
-  const { name, role, team, key, createTeam: createTeamRequest } = req.body || {};
-  const safeRole = typeof role === "string" ? role.trim().toLowerCase() : "participant";
-  const safeKey = typeof key === "string" ? key.trim().toLowerCase() : "";
-  const wantsCreate = Boolean(createTeamRequest);
-  const rateLimitKey = getLoginRateLimitKey(req, safeRole, team);
-  const rateLimit = checkLoginRateLimit(rateLimitKey);
-  if (rateLimit.limited) {
-    res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
-    res.status(429).json({ error: "Too many login attempts. Try again later." });
-    return;
-  }
-  const validatedName = validateText(name, "Name", maxNameLength, {
-    required: true
-  });
-  const validatedTeam = validateText(team, "Team", maxTeamLength, {
-    required: true
-  });
-
-  if (validatedName.error) {
-    rejectLogin(res, rateLimitKey, 400, validatedName.error);
-    return;
-  }
-  if (validatedTeam.error) {
-    rejectLogin(res, rateLimitKey, 400, validatedTeam.error);
-    return;
-  }
-  const safeName = validatedName.value;
-  const safeTeam = validatedTeam.value;
-  if (!["participant", "facilitator", "admin"].includes(safeRole)) {
-    rejectLogin(res, rateLimitKey, 400, "Invalid role.");
-    return;
-  }
-  if (safeRole !== "admin" && safeTeam.toLowerCase() === "admin") {
-    rejectLogin(res, rateLimitKey, 403, "Admin team is restricted.");
-    return;
-  }
-  if (safeKey && !/^[a-z0-9]{4,64}$/.test(safeKey)) {
-    rejectLogin(
-      res,
-      rateLimitKey,
-      400,
-      "Team key must be lowercase letters or digits."
-    );
-    return;
-  }
-
-  let teamRecord = getTeamByName(db, safeTeam);
-  let createdKey = null;
-  let createdTeam = false;
-
-  if (safeRole === "admin") {
-    if (safeTeam.toLowerCase() !== "admin") {
-      rejectLogin(res, rateLimitKey, 400, "Admin role must use the Admin team.");
-      return;
-    }
-    if (!teamRecord) {
-      rejectLogin(res, rateLimitKey, 404, "Admin team not found.");
-      return;
-    }
-    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
-      rejectLogin(res, rateLimitKey, 403, "Invalid admin key.");
-      return;
-    }
-  } else if (safeRole === "participant") {
-    if (!teamRecord) {
-      rejectLogin(res, rateLimitKey, 404, "Team not found.");
-      return;
-    }
-    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
-      rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
-      return;
-    }
-  } else {
-    if (wantsCreate) {
-      rejectLogin(res, rateLimitKey, 403, "Team creation requires a signed-in facilitator.");
-      return;
-    }
-    if (!teamRecord) {
-      rejectLogin(res, rateLimitKey, 404, "Team not found.");
-      return;
-    }
-    if (!safeKey || !verifyTeamKey(teamRecord, safeKey)) {
-      rejectLogin(res, rateLimitKey, 403, "Invalid team key.");
-      return;
-    }
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const ttlSeconds = Number.isFinite(authTtlHours) && authTtlHours > 0
-    ? authTtlHours * 3600
-    : 24 * 3600;
-  const teamName =
-    safeRole === "admin" ? "Admin" : teamRecord ? teamRecord.name : safeTeam;
-  const payload = {
-    name: safeName,
-    role: safeRole,
-    team: teamName,
-    iat: now,
-    exp: now + ttlSeconds
-  };
-  const token = signToken(payload);
-  const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
-  res.cookie("retro_auth", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: Boolean(isSecure),
-    maxAge: ttlSeconds * 1000,
-    path: "/"
-  });
-  clearLoginAttempts(rateLimitKey);
-  res.json({
-    user: { name: safeName, role: safeRole, team: teamName },
-    teamKey: createdKey,
-    createdTeam
-  });
+app.get("/api/me", auth.requireAuth, (req, res) => {
+  res.json({ user: { id: req.user.id }, teams: req.user.teams || [] });
 });
 
-app.post("/api/logout", (req, res) => {
-  res.clearCookie("retro_auth", { path: "/" });
-  res.json({ ok: true });
+// Static: never serve *.html directly (pages are route-gated above). Serve the
+// asset folders + top-level client scripts only.
+app.use((req, res, next) => {
+  if (req.path.endsWith(".html")) return res.status(404).end();
+  next();
 });
-
-app.get("/api/session", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
-  res.json({
-    user: {
-      name: auth.name,
-      role: auth.role,
-      team: auth.team
-    }
-  });
+["css", "fonts", "illos", "sounds", "vendor"].forEach((dir) => {
+  app.use(`/${dir}`, express.static(path.join(__dirname, "public", dir)));
 });
-
-app.get("/api/admin/teams", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
-  if (auth.role !== "admin") {
-    res.status(403).json({ error: "Admin role required." });
-    return;
-  }
-  const teams = listTeams(db);
-  res.json({ teams });
-});
-
-app.post("/api/teams", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
-  if (!["admin", "facilitator"].includes(auth.role)) {
-    res.status(403).json({ error: "Facilitator role required." });
-    return;
-  }
-  const validatedTeam = validateText(req.body?.team, "Team", maxTeamLength, {
-    required: true
-  });
-  if (validatedTeam.error) {
-    res.status(400).json({ error: validatedTeam.error });
-    return;
-  }
-  const safeTeam = validatedTeam.value;
-  if (safeTeam.toLowerCase() === "admin") {
-    res.status(403).json({ error: "Admin team is restricted." });
-    return;
-  }
-  if (getTeamByName(db, safeTeam)) {
-    res.status(409).json({ error: "Team already exists." });
-    return;
-  }
-  try {
-    const created = createTeam(db, safeTeam);
-    res.status(201).json({
-      team: created.name,
-      teamKey: created.joinKey
-    });
-  } catch (err) {
-    if (err && err.code === "TEAM_EXISTS") {
-      res.status(409).json({ error: "Team already exists." });
-      return;
-    }
-    res.status(500).json({ error: "Unable to create team." });
-  }
-});
-
-app.delete("/api/admin/teams/:id", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
-  if (auth.role !== "admin") {
-    res.status(403).json({ error: "Admin role required." });
-    return;
-  }
-  const team = getTeamById(db, req.params.id);
-  if (!team) {
-    res.status(404).json({ error: "Team not found." });
-    return;
-  }
-  if (team.name.toLowerCase() === "admin") {
-    res.status(403).json({ error: "Admin team cannot be deleted." });
-    return;
-  }
-  closeTeamRooms(team.name);
-  deleteTeamById(db, team.id);
-  state.retros = state.retros.filter(
-    (retro) => (retro.team || "").toLowerCase() !== team.name.toLowerCase()
-  );
-  res.json({ ok: true });
-});
-
-app.post("/api/admin/teams/:id/rotate", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
-  if (auth.role !== "admin") {
-    res.status(403).json({ error: "Admin role required." });
-    return;
-  }
-  const team = getTeamById(db, req.params.id);
-  if (!team) {
-    res.status(404).json({ error: "Team not found." });
-    return;
-  }
-  if (team.name.toLowerCase() === "admin") {
-    res.status(403).json({
-      error:
-        "The Admin key is managed through RETRO_ADMIN_KEY and cannot be rotated here."
-    });
-    return;
-  }
-  try {
-    const rotated = rotateTeamKey(db, team.id);
-    if (!rotated) {
-      res.status(404).json({ error: "Team not found." });
-      return;
-    }
-    res.json({ team: rotated.name, teamKey: rotated.joinKey });
-  } catch (err) {
-    res.status(500).json({ error: "Unable to rotate team key." });
-  }
-});
+app.use(express.static(path.join(__dirname, "public"), { index: false, extensions: [] }));
 
 app.get("/api/retros", (req, res) => {
   const auth = requireAuth(req, res);
