@@ -1,5 +1,4 @@
 const fs = require("fs");
-const crypto = require("crypto");
 const Database = require("better-sqlite3");
 
 const defaultTimer = {
@@ -61,7 +60,7 @@ function normalizeRetro(retro) {
   return {
     id: retro.id,
     title: retro.title || "Retrospective",
-    team: retro.team || "General",
+    teamId: retro.teamId || retro.team_id || "",
     createdAt: retro.createdAt || new Date().toISOString(),
     closed: Boolean(retro.closed),
     closedAt: retro.closedAt || null,
@@ -80,234 +79,6 @@ function openDatabase(dbFile) {
   return db;
 }
 
-function createTeamsSchema(db) {
-  db.exec(`CREATE TABLE IF NOT EXISTS teams (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    key_hash TEXT NOT NULL,
-    key_salt TEXT NOT NULL,
-    weak INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL
-  )`);
-  db.exec("CREATE INDEX IF NOT EXISTS idx_teams_name ON teams(name)");
-}
-
-function ensureTeamsKeyHashing(db) {
-  const columns = db.prepare("PRAGMA table_info(teams)").all();
-  if (!columns.length) {
-    return;
-  }
-  const hasJoinKey = columns.some((column) => column.name === "join_key");
-  const hasKeyHash = columns.some((column) => column.name === "key_hash");
-  if (!hasJoinKey || hasKeyHash) {
-    return;
-  }
-  const legacyRows = db
-    .prepare("SELECT id, name, join_key, created_at FROM teams")
-    .all();
-  const migrate = db.transaction(() => {
-    db.exec(`CREATE TABLE teams_hashed (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      key_hash TEXT NOT NULL,
-      key_salt TEXT NOT NULL,
-      weak INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL
-    )`);
-    const insert = db.prepare(
-      `INSERT INTO teams_hashed (id, name, key_hash, key_salt, weak, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    );
-    legacyRows.forEach((row) => {
-      const key = typeof row.join_key === "string" ? row.join_key : "";
-      const salt = createKeySalt();
-      insert.run(
-        row.id,
-        row.name,
-        hashTeamKey(key, salt),
-        salt,
-        isWeakTeamKey(key) ? 1 : 0,
-        row.created_at
-      );
-    });
-    db.exec("DROP TABLE teams");
-    db.exec("ALTER TABLE teams_hashed RENAME TO teams");
-    db.exec("CREATE INDEX IF NOT EXISTS idx_teams_name ON teams(name)");
-  });
-  migrate();
-}
-
-const TEAM_KEY_LENGTH = 12;
-const TEAM_KEY_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-function generateTeamKey() {
-  let key = "";
-  for (let i = 0; i < TEAM_KEY_LENGTH; i += 1) {
-    key += TEAM_KEY_CHARS[crypto.randomInt(TEAM_KEY_CHARS.length)];
-  }
-  return key;
-}
-
-function createKeySalt() {
-  return crypto.randomBytes(16).toString("hex");
-}
-
-function hashTeamKey(key, salt) {
-  return crypto
-    .createHash("sha256")
-    .update(`${salt}:${key}`)
-    .digest("hex");
-}
-
-function isWeakTeamKey(key) {
-  return typeof key !== "string" || key.length < TEAM_KEY_LENGTH;
-}
-
-function verifyTeamKey(team, key) {
-  if (!team || !team.key_hash || !team.key_salt) {
-    return false;
-  }
-  if (typeof key !== "string" || !key) {
-    return false;
-  }
-  const expected = Buffer.from(team.key_hash, "hex");
-  const actual = Buffer.from(hashTeamKey(key, team.key_salt), "hex");
-  if (expected.length === 0 || expected.length !== actual.length) {
-    return false;
-  }
-  return crypto.timingSafeEqual(expected, actual);
-}
-
-function getTeamByName(db, name) {
-  const safeName = typeof name === "string" ? name.trim() : "";
-  if (!safeName) {
-    return null;
-  }
-  return db
-    .prepare(
-      "SELECT id, name, key_hash, key_salt, weak, created_at FROM teams WHERE name = ? COLLATE NOCASE"
-    )
-    .get(safeName);
-}
-
-function getTeamById(db, teamId) {
-  const id = Number.parseInt(teamId, 10);
-  if (!Number.isFinite(id)) {
-    return null;
-  }
-  return db
-    .prepare(
-      "SELECT id, name, key_hash, key_salt, weak, created_at FROM teams WHERE id = ?"
-    )
-    .get(id);
-}
-
-function createTeam(db, name) {
-  const safeName = typeof name === "string" ? name.trim() : "";
-  if (!safeName) {
-    throw new Error("Team name is required.");
-  }
-  const key = generateTeamKey();
-  const salt = createKeySalt();
-  const now = new Date().toISOString();
-  try {
-    db.prepare(
-      `INSERT INTO teams (name, key_hash, key_salt, weak, created_at)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run(safeName, hashTeamKey(key, salt), salt, isWeakTeamKey(key) ? 1 : 0, now);
-  } catch (err) {
-    if (err && err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      const exists = new Error("Team already exists.");
-      exists.code = "TEAM_EXISTS";
-      throw exists;
-    }
-    throw err;
-  }
-  return { name: safeName, joinKey: key, weak: isWeakTeamKey(key) };
-}
-
-function rotateTeamKey(db, teamId) {
-  const team = getTeamById(db, teamId);
-  if (!team) {
-    return null;
-  }
-  const key = generateTeamKey();
-  const salt = createKeySalt();
-  db.prepare(
-    "UPDATE teams SET key_hash = ?, key_salt = ?, weak = ? WHERE id = ?"
-  ).run(hashTeamKey(key, salt), salt, isWeakTeamKey(key) ? 1 : 0, team.id);
-  return { id: team.id, name: team.name, joinKey: key };
-}
-
-function backfillTeamsFromRetros(db) {
-  const teams = db.prepare("SELECT DISTINCT team FROM retros").all();
-  teams.forEach((row) => {
-    const teamName = row && row.team ? String(row.team).trim() : "";
-    if (!teamName) {
-      return;
-    }
-    const existing = getTeamByName(db, teamName);
-    if (existing) {
-      return;
-    }
-    try {
-      createTeam(db, teamName);
-    } catch (err) {
-      if (err && err.code === "TEAM_EXISTS") {
-        return;
-      }
-      throw err;
-    }
-  });
-}
-
-function ensureAdminTeam(db, adminKey) {
-  const safeKey = typeof adminKey === "string" ? adminKey.trim().toLowerCase() : "";
-  if (!safeKey || !/^[a-z0-9]{5,64}$/.test(safeKey)) {
-    throw new Error("Admin key must be 5-64 lowercase letters or digits.");
-  }
-  const salt = createKeySalt();
-  const hash = hashTeamKey(safeKey, salt);
-  const weak = isWeakTeamKey(safeKey) ? 1 : 0;
-  const existing = getTeamByName(db, "Admin");
-  if (!existing) {
-    db.prepare(
-      `INSERT INTO teams (name, key_hash, key_salt, weak, created_at)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run("Admin", hash, salt, weak, new Date().toISOString());
-    return { name: "Admin", created: true };
-  }
-  db.prepare(
-    "UPDATE teams SET key_hash = ?, key_salt = ?, weak = ? WHERE id = ?"
-  ).run(hash, salt, weak, existing.id);
-  return { name: "Admin", updated: true };
-}
-
-function listTeams(db) {
-  return db
-    .prepare(
-      "SELECT id, name, weak, created_at FROM teams ORDER BY name COLLATE NOCASE"
-    )
-    .all();
-}
-
-function deleteTeamById(db, teamId) {
-  const id = Number.parseInt(teamId, 10);
-  if (!Number.isFinite(id)) {
-    return null;
-  }
-  const team = db.prepare("SELECT id, name FROM teams WHERE id = ?").get(id);
-  if (!team) {
-    return null;
-  }
-  const tx = db.transaction(() => {
-    db.prepare("DELETE FROM retros WHERE team = ? COLLATE NOCASE").run(team.name);
-    db.prepare("DELETE FROM teams WHERE id = ?").run(team.id);
-  });
-  tx();
-  return team;
-}
-
 function createNormalizedSchema(db, tables) {
   const tableNames = {
     retros: tables.retros,
@@ -317,7 +88,7 @@ function createNormalizedSchema(db, tables) {
   db.exec(`CREATE TABLE IF NOT EXISTS ${tableNames.retros} (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    team TEXT NOT NULL,
+    team_id TEXT NOT NULL,
     created_at TEXT NOT NULL,
     closed INTEGER NOT NULL,
     closed_at TEXT,
@@ -410,7 +181,7 @@ function runRetroUpsert(db, tableName, retro, timestamp) {
     `INSERT INTO ${tableName} (
       id,
       title,
-      team,
+      team_id,
       created_at,
       closed,
       closed_at,
@@ -423,7 +194,7 @@ function runRetroUpsert(db, tableName, retro, timestamp) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       title = excluded.title,
-      team = excluded.team,
+      team_id = excluded.team_id,
       created_at = excluded.created_at,
       closed = excluded.closed,
       closed_at = excluded.closed_at,
@@ -438,7 +209,7 @@ function runRetroUpsert(db, tableName, retro, timestamp) {
   retroStmt.run(
     normalized.id,
     normalized.title,
-    normalized.team,
+    normalized.teamId,
     normalized.createdAt,
     normalized.closed ? 1 : 0,
     normalized.closedAt,
@@ -768,6 +539,13 @@ function migrateLegacyJsonTable(db, callback) {
   }
 }
 
+function dropLegacyBoardData(db) {
+  db.exec("DROP TABLE IF EXISTS teams");
+  db.exec("DROP TABLE IF EXISTS actions");
+  db.exec("DROP TABLE IF EXISTS cards");
+  db.exec("DROP TABLE IF EXISTS retros");
+}
+
 function ensureSchema(db, callback) {
   try {
     db.exec(
@@ -777,48 +555,20 @@ function ensureSchema(db, callback) {
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get();
     const version = row ? Number.parseInt(row.value, 10) : 0;
-    if (version >= 2) {
+    if (version < 6) {
+      const tx = db.transaction(() => {
+        dropLegacyBoardData(db);
+        createNormalizedSchema(db, { retros: "retros", cards: "cards" });
+        ensureCardCreatedByColumn(db);
+        db.exec(
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '6')"
+        );
+      });
+      tx();
+    } else {
       createNormalizedSchema(db, { retros: "retros", cards: "cards" });
       ensureCardCreatedByColumn(db);
-      createTeamsSchema(db);
-      ensureTeamsKeyHashing(db);
-      backfillTeamsFromRetros(db);
-      if (version < 5) {
-        db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
-        );
-      }
-      callback();
-      return;
     }
-    const cols = db.prepare("PRAGMA table_info(retros)").all();
-    const hasLegacyJson = Array.isArray(cols)
-      ? cols.some((col) => col.name === "data_json")
-      : false;
-    if (hasLegacyJson) {
-      migrateLegacyJsonTable(db, (err) => {
-        if (err) {
-          callback(err);
-          return;
-        }
-        createTeamsSchema(db);
-        ensureTeamsKeyHashing(db);
-        backfillTeamsFromRetros(db);
-        db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
-        );
-        callback();
-      });
-      return;
-    }
-    createNormalizedSchema(db, { retros: "retros", cards: "cards" });
-    ensureCardCreatedByColumn(db);
-    createTeamsSchema(db);
-    ensureTeamsKeyHashing(db);
-    backfillTeamsFromRetros(db);
-    db.exec(
-      "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')"
-    );
     callback();
   } catch (err) {
     callback(err);
@@ -882,7 +632,7 @@ function loadRetros(db, callback) {
       return normalizeRetro({
         id: row.id,
         title: row.title,
-        team: row.team,
+        teamId: row.team_id,
         createdAt: row.created_at,
         closed: Boolean(row.closed),
         closedAt: row.closed_at,
@@ -979,6 +729,37 @@ function applyRetention(db, days, callback) {
   }
 }
 
+function createRetroRow(db, { id, title, teamId }) {
+  const now = new Date().toISOString();
+  return runRetroUpsert(
+    db,
+    "retros",
+    normalizeRetro({
+      id,
+      title,
+      teamId,
+      createdAt: now,
+      closed: false,
+      closedAt: null,
+      columns: { well: [], improve: [], continue: [] },
+      actions: [],
+      timer: null,
+      lastAction: null
+    }),
+    now
+  );
+}
+
+function getRetroById(db, id) {
+  return db.prepare("SELECT * FROM retros WHERE id = ?").get(id) || null;
+}
+
+function getRetrosForTeamId(db, teamId) {
+  return db
+    .prepare("SELECT * FROM retros WHERE team_id = ? ORDER BY created_at DESC")
+    .all(teamId);
+}
+
 module.exports = {
   defaultTimer,
   defaultColumns,
@@ -996,13 +777,7 @@ module.exports = {
   saveRetros,
   seedFromJsonIfPresent,
   applyRetention,
-  getTeamByName,
-  getTeamById,
-  createTeam,
-  rotateTeamKey,
-  verifyTeamKey,
-  backfillTeamsFromRetros,
-  ensureAdminTeam,
-  listTeams,
-  deleteTeamById
+  createRetroRow,
+  getRetroById,
+  getRetrosForTeamId
 };
