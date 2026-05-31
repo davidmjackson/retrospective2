@@ -1018,7 +1018,7 @@ app.get("/api/me", auth.requireAuth, (req, res) => {
 // Static: never serve *.html directly (pages are route-gated above). Serve the
 // asset folders + top-level client scripts only.
 app.use((req, res, next) => {
-  if (req.path.endsWith(".html")) return res.status(404).end();
+  if (req.path.toLowerCase().endsWith(".html")) return res.status(404).end();
   next();
 });
 ["css", "fonts", "illos", "sounds", "vendor"].forEach((dir) => {
