@@ -26,7 +26,7 @@ const { teamIdInTeams, boardTeamAllowed } = require("./lib/teamAccess");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
 
 const auth = createAuthClient({
   appName: process.env.APP_NAME || "retro",
@@ -35,6 +35,34 @@ const auth = createAuthClient({
   cookieName: "retro_session",
   cookieDomain: process.env.COOKIE_DOMAIN,
   dbPath: process.env.APP_SESSIONS_DB || path.join(__dirname, "data", "retro-sessions.db")
+});
+
+server.on("upgrade", async (req, socket, head) => {
+  socket.on("error", () => socket.destroy());
+  const url = String(req.url || "");
+  if (url !== "/ws" && !url.startsWith("/ws?")) {
+    socket.destroy();
+    return;
+  }
+  let result;
+  try {
+    result = await authenticateUpgrade(auth.verifySession, req.headers.cookie);
+  } catch (err) {
+    console.warn("WS upgrade auth error:", err);
+    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+  if (!result.ok) {
+    socket.write(`HTTP/1.1 ${result.status} Unauthorized\r\n\r\n`);
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    ws.hubUserId = result.context.userId;
+    ws.teams = result.context.teams;
+    wss.emit("connection", ws, req);
+  });
 });
 
 const clients = new Map();
