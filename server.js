@@ -1081,7 +1081,7 @@ app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => 
         dueDate: action.dueDate || "",
         notes: action.notes || "",
         status: action.status || "todo",
-        team: retro.team,
+        teamId: retro.teamId,
         retroTitle: retro.title,
         createdAt: retro.createdAt,
         closed: retro.closed
