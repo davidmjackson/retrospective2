@@ -98,11 +98,11 @@ const stateFile = path.join(__dirname, "state.json");
 const dbFile = process.env.RETRO_DB_PATH || path.join(__dirname, "retros.db");
 const db = openDatabase(dbFile);
 
-function createRetro({ title, team }) {
+function createRetro({ title, teamId }) {
   return normalizeRetro({
     id: `retro-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
-    team,
+    teamId,
     createdAt: new Date().toISOString(),
     closed: false,
     closedAt: null,
@@ -869,15 +869,13 @@ function getRetro(id) {
   return state.retros.find((retro) => retro.id === id);
 }
 
-function listRetrosForTeam(normalizedTeam) {
+function listRetrosForTeam(teamId) {
   return state.retros
-    .filter((retro) => {
-      return (retro.team || "").toLowerCase() === normalizedTeam;
-    })
+    .filter((retro) => retro.teamId === teamId)
     .map((retro) => ({
       id: retro.id,
       title: retro.title,
-      team: retro.team,
+      teamId: retro.teamId,
       createdAt: retro.createdAt,
       closed: retro.closed,
       closedAt: retro.closedAt
@@ -941,48 +939,6 @@ function broadcastRetrosToLobby(teamName) {
   });
 }
 
-function closeTeamRooms(teamName) {
-  const normalized = (teamName || "").toLowerCase();
-  if (!normalized) {
-    return;
-  }
-  const retroIds = state.retros
-    .filter((retro) => (retro.team || "").toLowerCase() === normalized)
-    .map((retro) => retro.id);
-  retroIds.forEach((retroId) => {
-    const room = rooms.get(retroId);
-    if (!room) {
-      return;
-    }
-    for (const client of room) {
-      try {
-        if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "error", message: "Team deleted." }));
-        }
-        client.close();
-      } catch (err) {
-        // ignore
-      }
-      clients.delete(client);
-    }
-    rooms.delete(retroId);
-  });
-  const lobbyRoom = lobbyRooms.get(normalized);
-  if (lobbyRoom) {
-    for (const client of lobbyRoom) {
-      try {
-        if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "error", message: "Team deleted." }));
-        }
-        client.close();
-      } catch (err) {
-        // ignore
-      }
-      clients.delete(client);
-    }
-    lobbyRooms.delete(normalized);
-  }
-}
 
 function joinRoom(retroId, ws) {
   if (!rooms.has(retroId)) {
@@ -1232,62 +1188,56 @@ app.put("/api/actions", (req, res) => {
   res.json({ action });
 });
 
+const ALLOWED_ROLES = new Set(["participant", "facilitator"]);
+
+function readConnParams(req) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const rawName = (url.searchParams.get("name") || "").trim().slice(0, 80);
+  const rawRole = (url.searchParams.get("role") || "").trim().toLowerCase();
+  return {
+    retroId: url.searchParams.get("retroId"),
+    view: url.searchParams.get("view"),
+    teamId: url.searchParams.get("teamId"),
+    name: rawName || "Anonymous",
+    role: ALLOWED_ROLES.has(rawRole) ? rawRole : "participant"
+  };
+}
+
 wss.on("connection", (ws, req) => {
   if (!isWebSocketOriginAllowed(req.headers)) {
     ws.send(JSON.stringify({ type: "error", message: "Origin not allowed." }));
     ws.close();
     return;
   }
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const retroId = url.searchParams.get("retroId");
-  const view = url.searchParams.get("view");
-  const auth = getAuthFromHeaders(req.headers);
-  const retro = retroId ? getRetro(retroId) : null;
-  if (!auth) {
-    ws.send(JSON.stringify({ type: "error", message: "Unauthorized." }));
-    ws.close();
-    return;
-  }
-  if (view === "lobby" && auth.team) {
-    const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    clients.set(ws, {
-      id: clientId,
-      name: auth.name || "Anonymous",
-      team: auth.normalizedTeam,
-      role: auth.role,
-      view: "lobby"
-    });
-    joinLobbyRoom(auth.normalizedTeam, ws);
-    ws.send(
-      JSON.stringify({
-        type: "retros",
-        retros: listRetrosForTeam(auth.normalizedTeam)
-      })
-    );
+  const { retroId, view, teamId, name, role } = readConnParams(req);
+  const teams = Array.isArray(ws.teams) ? ws.teams : [];
 
+  if (view === "lobby") {
+    if (!teamIdInTeams(teamId, teams)) {
+      ws.send(JSON.stringify({ type: "error", message: "Not a member of that team." }));
+      ws.close();
+      return;
+    }
+    const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    clients.set(ws, { id: clientId, name, team: teamId, role, view: "lobby" });
+    joinLobbyRoom(teamId, ws);
+    ws.send(JSON.stringify({ type: "retros", retros: listRetrosForTeam(teamId) }));
     ws.on("close", () => {
       clients.delete(ws);
-      leaveLobbyRoom(auth.normalizedTeam, ws);
+      leaveLobbyRoom(teamId, ws);
     });
     return;
   }
-  if (
-    !retro ||
-    !auth.team ||
-    (retro.team || "").toLowerCase() !== auth.normalizedTeam
-  ) {
+
+  const retro = retroId ? getRetro(retroId) : null;
+  if (!boardTeamAllowed(retro, teams)) {
     ws.send(JSON.stringify({ type: "error", message: "Retro not found." }));
     ws.close();
     return;
   }
 
   const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  clients.set(ws, {
-    id: clientId,
-    name: auth.name || "Anonymous",
-    retroId,
-    role: auth.role
-  });
+  clients.set(ws, { id: clientId, name, retroId, role });
   joinRoom(retroId, ws);
   ws.send(JSON.stringify({ type: "init", retro }));
 
