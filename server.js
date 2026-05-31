@@ -15,10 +15,7 @@ const {
   saveRetroTimer,
   saveRetros,
   seedFromJsonIfPresent,
-  applyRetention,
-  createRetroRow,
-  getRetroById,
-  getRetrosForTeamId
+  applyRetention
 } = require("./db");
 const { createAuthClient } = require("@suite/auth-client");
 const { authenticateUpgrade } = require("./lib/upgradeAuth");
@@ -799,6 +796,7 @@ app.post("/api/retros/:id/close", auth.requireAuth, requireEntitled, (req, res) 
 });
 
 app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => {
+  const teamNames = new Map((req.user.teams || []).map((t) => [t.id, t.name]));
   const actions = [];
   state.retros.forEach((retro) => {
     if (!boardTeamAllowed(retro, req.user.teams)) {
@@ -816,6 +814,7 @@ app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => 
         notes: action.notes || "",
         status: action.status || "todo",
         teamId: retro.teamId,
+        team: teamNames.get(retro.teamId) || retro.teamId,
         retroTitle: retro.title,
         createdAt: retro.createdAt,
         closed: retro.closed

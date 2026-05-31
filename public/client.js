@@ -728,9 +728,7 @@ async function loadRetroMeta() {
     return;
   }
   retroTitle.textContent = retro.title;
-  retroMeta.textContent = `${retro.team} · ${new Date(
-    retro.createdAt
-  ).toLocaleString()}`;
+  retroMeta.textContent = new Date(retro.createdAt).toLocaleString();
   isReadOnly = retro.closed;
   retroStatus.classList.remove("open", "closed");
   if (retro.closed) {
