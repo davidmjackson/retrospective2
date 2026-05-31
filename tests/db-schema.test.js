@@ -33,3 +33,13 @@ test("getRetrosForTeamId returns only that team's boards", async () => {
   const got = getRetroById(db, "r2");
   assert.strictEqual(got.team_id, "t2");
 });
+
+test("ensureSchema is idempotent on a v6 db", async () => {
+  const db = await freshDb(); // v0 → v6
+  createRetroRow(db, { id: "keep", title: "K", teamId: "t1" });
+  await new Promise((res, rej) =>
+    ensureSchema(db, (err) => (err ? rej(err) : res()))
+  );
+  const row = getRetroById(db, "keep");
+  assert.ok(row, "row should survive a second ensureSchema call");
+});

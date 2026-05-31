@@ -485,59 +485,6 @@ function saveRetros(db, retros, callback, options = {}) {
   }
 }
 
-function migrateLegacyJsonTable(db, callback) {
-  try {
-    const tempTables = { retros: "retros_v2", cards: "cards_v2", actions: "actions_v2" };
-    createNormalizedSchema(db, tempTables);
-    const rows = db.prepare("SELECT data_json FROM retros").all();
-    const retros = [];
-    rows.forEach((row) => {
-      if (!row || !row.data_json) {
-        return;
-      }
-      try {
-        const parsed = JSON.parse(row.data_json);
-        if (parsed && Array.isArray(parsed.retros)) {
-          parsed.retros.forEach((retro) => retros.push(normalizeRetro(retro)));
-        } else if (parsed) {
-          retros.push(normalizeRetro(parsed));
-        }
-      } catch (parseErr) {
-        return;
-      }
-    });
-
-    saveRetros(
-      db,
-      retros,
-      (saveErr) => {
-        if (saveErr) {
-          callback(saveErr);
-          return;
-        }
-        const tx = db.transaction(() => {
-          db.exec("DROP TABLE retros");
-          db.exec("ALTER TABLE retros_v2 RENAME TO retros");
-          db.exec("ALTER TABLE cards_v2 RENAME TO cards");
-          db.exec("ALTER TABLE actions_v2 RENAME TO actions");
-          db.exec("CREATE INDEX IF NOT EXISTS idx_cards_retro ON cards(retro_id)");
-          db.exec(
-            "CREATE INDEX IF NOT EXISTS idx_cards_retro_column ON cards(retro_id, column_type)"
-          );
-          db.exec("CREATE INDEX IF NOT EXISTS idx_actions_retro ON actions(retro_id)");
-          db.exec(
-            "CREATE INDEX IF NOT EXISTS idx_actions_retro_status ON actions(retro_id, status)"
-          );
-        });
-        tx();
-        callback();
-      },
-      { tables: tempTables }
-    );
-  } catch (err) {
-    callback(err);
-  }
-}
 
 function dropLegacyBoardData(db) {
   db.exec("DROP TABLE IF EXISTS teams");
@@ -667,7 +614,7 @@ function loadRetrosFromJsonFile(stateFile) {
       const migrated = normalizeRetro({
         id: "retro-1",
         title: "Retrospective",
-        team: "General",
+        teamId: "",
         createdAt: new Date().toISOString(),
         closed: false,
         closedAt: null,
