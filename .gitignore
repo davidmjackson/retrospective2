@@ -12,3 +12,4 @@ retros.db-wal
 .playwright-libs/
 .worktrees/
 .superpowers/
+data/
