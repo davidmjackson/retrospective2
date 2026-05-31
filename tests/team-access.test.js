@@ -10,8 +10,12 @@ test("teamIdInTeams matches by id", () => {
   assert.strictEqual(teamIdInTeams("t1", null), false);
 });
 
-test("boardTeamAllowed requires the board's team_id to be in the user's teams", () => {
+test("boardTeamAllowed requires the board's team to be in the user's teams", () => {
+  // DB-row shape (team_id)
   assert.strictEqual(boardTeamAllowed({ team_id: "t1" }, teams), true);
   assert.strictEqual(boardTeamAllowed({ team_id: "t9" }, teams), false);
+  // in-memory normalized shape (teamId)
+  assert.strictEqual(boardTeamAllowed({ teamId: "t2" }, teams), true);
+  assert.strictEqual(boardTeamAllowed({ teamId: "t9" }, teams), false);
   assert.strictEqual(boardTeamAllowed(null, teams), false);
 });
