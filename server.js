@@ -1252,6 +1252,8 @@ wss.on("connection", (ws, req) => {
       return;
     }
 
+    const actor = clients.get(ws);
+
     if (data.type === "hello") {
       broadcastToRetro(retroId, {
         type: "presence",
@@ -1328,7 +1330,7 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
-      const result = addCardToRetro(retro, data, auth);
+      const result = addCardToRetro(retro, data, actor);
       if (result.error) {
         return;
       }
@@ -1340,7 +1342,7 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
-      const result = voteCardInRetro(retro, data, auth);
+      const result = voteCardInRetro(retro, data, actor);
       if (result.error) {
         return;
       }
@@ -1352,7 +1354,7 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
-      const result = moveCardInRetro(retro, data, auth);
+      const result = moveCardInRetro(retro, data, actor);
       if (result.error) {
         return;
       }
@@ -1364,7 +1366,7 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
-      const result = createActionFromCard(retro, data, auth);
+      const result = createActionFromCard(retro, data, actor);
       if (result.error) {
         return;
       }
