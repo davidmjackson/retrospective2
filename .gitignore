@@ -13,3 +13,4 @@ retros.db-wal
 .worktrees/
 .superpowers/
 data/
+tests/e2e/.data/

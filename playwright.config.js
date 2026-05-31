@@ -38,14 +38,18 @@ module.exports = defineConfig({
   webServer: {
     command: [
       "rm -f .playwright-retros.db .playwright-retros.db-shm .playwright-retros.db-wal &&",
+      "rm -rf tests/e2e/.data &&",
       `PORT=${port}`,
+      "APP_NAME=retro",
+      "HUB_BASE_URL=http://127.0.0.1:9",
+      "HUB_API_KEY=test",
+      "APP_SESSIONS_DB=tests/e2e/.data/retro-sessions.db",
       "RETRO_DB_PATH=.playwright-retros.db",
-      "RETRO_AUTH_SECRET=playwright-test-secret",
-      "RETRO_ADMIN_KEY=admn1",
+      "RETRO_ALLOWED_ORIGINS=*",
       "node server.js"
     ].join(" "),
-    url: `http://127.0.0.1:${port}/`,
+    url: `http://127.0.0.1:${port}/health`,
     reuseExistingServer: false,
-    timeout: 10000
+    timeout: 15000
   }
 });
