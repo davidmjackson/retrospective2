@@ -811,16 +811,12 @@ function requireAuth(req, res) {
   return auth;
 }
 
-function ensureTeamAccess(req, res, retro) {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return null;
-  }
-  if (!retro || (retro.team || "").toLowerCase() !== auth.normalizedTeam) {
+function ensureBoardAccess(req, res, retro) {
+  if (!retro || !boardTeamAllowed(retro, req.user.teams)) {
     res.status(404).json({ error: "Retro not found." });
-    return null;
+    return false;
   }
-  return auth;
+  return true;
 }
 
 function reconcileTimers() {
@@ -1010,24 +1006,21 @@ app.use((req, res, next) => {
 });
 app.use(express.static(path.join(__dirname, "public"), { index: false, extensions: [] }));
 
-app.get("/api/retros", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
+app.get("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
+  const teamId = String(req.query.teamId || "");
+  if (!teamIdInTeams(teamId, req.user.teams)) {
+    res.status(403).json({ error: "Not a member of that team." });
     return;
   }
-  res.json({ retros: listRetrosForTeam(auth.normalizedTeam) });
+  res.json({ retros: listRetrosForTeam(teamId) });
 });
 
-app.post("/api/retros", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
+app.post("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
+  const { title, teamId } = req.body || {};
+  if (!teamIdInTeams(teamId, req.user.teams)) {
+    res.status(403).json({ error: "Not a member of that team." });
     return;
   }
-  if (auth.role !== "facilitator") {
-    res.status(403).json({ error: "Facilitator role required." });
-    return;
-  }
-  const { title } = req.body || {};
   const validatedTitle = validateText(title, "Title", maxRetroTitleLength, {
     required: true
   });
@@ -1035,32 +1028,27 @@ app.post("/api/retros", (req, res) => {
     res.status(400).json({ error: validatedTitle.error });
     return;
   }
-  const retro = createRetro({ title: validatedTitle.value, team: auth.team });
+  const retro = createRetro({ title: validatedTitle.value, teamId });
   state.retros.push(retro);
   if (!persistRetro(retro)) {
     res.status(500).json({ error: "Unable to persist retro." });
     return;
   }
-  broadcastRetrosToLobby(auth.normalizedTeam);
+  broadcastRetrosToLobby(teamId);
   res.status(201).json({ retro });
 });
 
-app.get("/api/retros/:id", (req, res) => {
+app.get("/api/retros/:id", auth.requireAuth, requireEntitled, (req, res) => {
   const retro = getRetro(req.params.id);
-  if (!ensureTeamAccess(req, res, retro)) {
+  if (!ensureBoardAccess(req, res, retro)) {
     return;
   }
   res.json({ retro });
 });
 
-app.post("/api/retros/:id/close", (req, res) => {
+app.post("/api/retros/:id/close", auth.requireAuth, requireEntitled, (req, res) => {
   const retro = getRetro(req.params.id);
-  const auth = ensureTeamAccess(req, res, retro);
-  if (!auth) {
-    return;
-  }
-  if (auth.role !== "facilitator") {
-    res.status(403).json({ error: "Facilitator role required." });
+  if (!ensureBoardAccess(req, res, retro)) {
     return;
   }
   retro.closed = true;
@@ -1068,22 +1056,18 @@ app.post("/api/retros/:id/close", (req, res) => {
   retro.timer.running = false;
   retro.timer.endAt = null;
   if (!persistRetro(retro)) {
-    res.status(500).json({ error: "Unable to close retro." });
+    res.status(500).json({ error: "Unable to persist retro." });
     return;
   }
   broadcastToRetro(retro.id, { type: "retroClosed", retro });
-  broadcastRetrosToLobby(auth.normalizedTeam);
+  broadcastRetrosToLobby(retro.teamId);
   res.json({ retro });
 });
 
-app.get("/api/actions-report", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
+app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => {
   const actions = [];
   state.retros.forEach((retro) => {
-    if ((retro.team || "").toLowerCase() !== auth.normalizedTeam) {
+    if (!boardTeamAllowed(retro, req.user.teams)) {
       return;
     }
     (retro.actions || []).forEach((action) => {
@@ -1107,11 +1091,7 @@ app.get("/api/actions-report", (req, res) => {
   res.json({ actions });
 });
 
-app.put("/api/actions", (req, res) => {
-  const auth = requireAuth(req, res);
-  if (!auth) {
-    return;
-  }
+app.put("/api/actions", auth.requireAuth, requireEntitled, (req, res) => {
   const { retroId, actionId, status, notes, owner, dueDate } = req.body || {};
   const validatedRetroId = validateId(retroId, "retroId");
   const validatedActionId = validateId(actionId, "actionId");
@@ -1158,7 +1138,7 @@ app.put("/api/actions", (req, res) => {
     nextDueDate = validatedDueDate.value;
   }
   const retro = getRetro(validatedRetroId.value);
-  if (!retro || (retro.team || "").toLowerCase() !== auth.normalizedTeam) {
+  if (!retro || !boardTeamAllowed(retro, req.user.teams)) {
     res.status(404).json({ error: "Retro not found." });
     return;
   }
