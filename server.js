@@ -747,6 +747,28 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", uptimeSeconds: Math.floor(process.uptime()) });
 });
 
+// --- Public anonymous-share surface (no auth) ---
+app.get("/api/shared/:token", (req, res) => {
+  const retro = findBoardByToken(String(req.params.token || ""));
+  if (!retro) {
+    res.status(404).json({ error: "This link is not valid." });
+    return;
+  }
+  if (retro.closed) {
+    res.status(410).json({ error: "This retro has ended." });
+    return;
+  }
+  res.json({ board: { id: retro.id, title: retro.title, closed: retro.closed } });
+});
+
+app.get("/join", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "join.html"));
+});
+
+app.get("/shared", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "retrospective.html"));
+});
+
 app.get("/api/me", auth.requireAuth, (req, res) => {
   res.json({ user: { id: req.user.id }, company: req.user.company || null });
 });
