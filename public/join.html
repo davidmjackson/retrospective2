@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Join a retro</title>
+  <link rel="stylesheet" href="/css/theme-core.css" />
+  <link rel="stylesheet" href="/css/theme-retro.css" />
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/breathing-waves.css" />
+</head>
+<body class="page lobby-page">
+  <main class="page-content" style="max-width:480px;padding-top:48px;">
+    <section class="panel">
+      <h1>Join the retro</h1>
+      <p id="join-board-title" class="panel-copy">Checking your link…</p>
+      <p id="join-error" class="error-text" hidden></p>
+      <form id="join-form" class="form-grid" hidden>
+        <label class="field">
+          <span>Your name</span>
+          <input id="join-name" type="text" placeholder="Your name" maxlength="80" required />
+        </label>
+        <button type="submit" class="primary-btn">Join board</button>
+      </form>
+    </section>
+  </main>
+  <script src="/join.js"></script>
+</body>
+</html>
