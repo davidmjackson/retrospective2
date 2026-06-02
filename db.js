@@ -60,7 +60,8 @@ function normalizeRetro(retro) {
   return {
     id: retro.id,
     title: retro.title || "Retrospective",
-    teamId: retro.teamId || retro.team_id || "",
+    companyId: retro.companyId || retro.company_id || "",
+    shareToken: retro.shareToken || retro.share_token || null,
     createdAt: retro.createdAt || new Date().toISOString(),
     closed: Boolean(retro.closed),
     closedAt: retro.closedAt || null,
@@ -88,10 +89,11 @@ function createNormalizedSchema(db, tables) {
   db.exec(`CREATE TABLE IF NOT EXISTS ${tableNames.retros} (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    team_id TEXT NOT NULL,
+    company_id TEXT NOT NULL,
     created_at TEXT NOT NULL,
     closed INTEGER NOT NULL,
     closed_at TEXT,
+    share_token TEXT,
     timer_duration_seconds INTEGER NOT NULL,
     timer_remaining_seconds INTEGER NOT NULL,
     timer_running INTEGER NOT NULL,
@@ -139,6 +141,9 @@ function createNormalizedSchema(db, tables) {
   db.exec(
     `CREATE INDEX IF NOT EXISTS idx_${tableNames.actions}_retro_status ON ${tableNames.actions}(retro_id, status)`
   );
+  db.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_${tableNames.retros}_share_token ON ${tableNames.retros}(share_token) WHERE share_token IS NOT NULL`
+  );
 }
 
 function tableHasColumn(db, tableName, columnName) {
@@ -179,25 +184,17 @@ function runRetroUpsert(db, tableName, retro, timestamp) {
   const normalized = normalizeRetro(retro);
   const retroStmt = db.prepare(
     `INSERT INTO ${tableName} (
-      id,
-      title,
-      team_id,
-      created_at,
-      closed,
-      closed_at,
-      timer_duration_seconds,
-      timer_remaining_seconds,
-      timer_running,
-      timer_end_at,
-      last_action_json,
-      updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, title, company_id, created_at, closed, closed_at, share_token,
+      timer_duration_seconds, timer_remaining_seconds, timer_running, timer_end_at,
+      last_action_json, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       title = excluded.title,
-      team_id = excluded.team_id,
+      company_id = excluded.company_id,
       created_at = excluded.created_at,
       closed = excluded.closed,
       closed_at = excluded.closed_at,
+      share_token = excluded.share_token,
       timer_duration_seconds = excluded.timer_duration_seconds,
       timer_remaining_seconds = excluded.timer_remaining_seconds,
       timer_running = excluded.timer_running,
@@ -209,10 +206,11 @@ function runRetroUpsert(db, tableName, retro, timestamp) {
   retroStmt.run(
     normalized.id,
     normalized.title,
-    normalized.teamId,
+    normalized.companyId,
     normalized.createdAt,
     normalized.closed ? 1 : 0,
     normalized.closedAt,
+    normalized.shareToken,
     normalized.timer.durationSeconds,
     normalized.timer.remainingSeconds,
     normalized.timer.running ? 1 : 0,
@@ -502,13 +500,13 @@ function ensureSchema(db, callback) {
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get();
     const version = row ? Number.parseInt(row.value, 10) : 0;
-    if (version < 6) {
+    if (version < 7) {
       const tx = db.transaction(() => {
         dropLegacyBoardData(db);
         createNormalizedSchema(db, { retros: "retros", cards: "cards" });
         ensureCardCreatedByColumn(db);
         db.exec(
-          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '6')"
+          "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '7')"
         );
       });
       tx();
@@ -579,7 +577,8 @@ function loadRetros(db, callback) {
       return normalizeRetro({
         id: row.id,
         title: row.title,
-        teamId: row.team_id,
+        companyId: row.company_id,
+        shareToken: row.share_token,
         createdAt: row.created_at,
         closed: Boolean(row.closed),
         closedAt: row.closed_at,
@@ -676,7 +675,7 @@ function applyRetention(db, days, callback) {
   }
 }
 
-function createRetroRow(db, { id, title, teamId }) {
+function createRetroRow(db, { id, title, companyId, shareToken = null }) {
   const now = new Date().toISOString();
   return runRetroUpsert(
     db,
@@ -684,7 +683,8 @@ function createRetroRow(db, { id, title, teamId }) {
     normalizeRetro({
       id,
       title,
-      teamId,
+      companyId,
+      shareToken,
       createdAt: now,
       closed: false,
       closedAt: null,
@@ -701,10 +701,15 @@ function getRetroById(db, id) {
   return db.prepare("SELECT * FROM retros WHERE id = ?").get(id) || null;
 }
 
-function getRetrosForTeamId(db, teamId) {
+function getRetrosForCompanyId(db, companyId) {
   return db
-    .prepare("SELECT * FROM retros WHERE team_id = ? ORDER BY created_at DESC")
-    .all(teamId);
+    .prepare("SELECT * FROM retros WHERE company_id = ? ORDER BY created_at DESC")
+    .all(companyId);
+}
+
+function getRetroByShareToken(db, token) {
+  if (!token) return null;
+  return db.prepare("SELECT * FROM retros WHERE share_token = ?").get(token) || null;
 }
 
 module.exports = {
@@ -726,5 +731,6 @@ module.exports = {
   applyRetention,
   createRetroRow,
   getRetroById,
-  getRetrosForTeamId
+  getRetrosForCompanyId,
+  getRetroByShareToken
 };
