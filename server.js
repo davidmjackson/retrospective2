@@ -748,7 +748,7 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/api/me", auth.requireAuth, (req, res) => {
-  res.json({ user: { id: req.user.id }, teams: req.user.teams || [] });
+  res.json({ user: { id: req.user.id }, company: req.user.company || null });
 });
 
 // Static: never serve *.html directly (pages are route-gated above). Serve the
@@ -763,20 +763,21 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "public"), { index: false, extensions: [] }));
 
 app.get("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
-  const teamId = String(req.query.teamId || "");
-  if (!teamIdInTeams(teamId, req.user.teams)) {
-    res.status(403).json({ error: "Not a member of that team." });
+  const company = req.user.company;
+  if (!company || !company.id) {
+    res.status(403).json({ error: "No company on your account. Please sign in again." });
     return;
   }
-  res.json({ retros: listRetrosForTeam(teamId) });
+  res.json({ retros: listRetrosForCompany(company.id) });
 });
 
 app.post("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
-  const { title, teamId } = req.body || {};
-  if (!teamIdInTeams(teamId, req.user.teams)) {
-    res.status(403).json({ error: "Not a member of that team." });
+  const company = req.user.company;
+  if (!company || !company.id) {
+    res.status(403).json({ error: "No company on your account. Please sign in again." });
     return;
   }
+  const { title } = req.body || {};
   const validatedTitle = validateText(title, "Title", maxRetroTitleLength, {
     required: true
   });
@@ -784,13 +785,13 @@ app.post("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
     res.status(400).json({ error: validatedTitle.error });
     return;
   }
-  const retro = createRetro({ title: validatedTitle.value, teamId });
+  const retro = createRetro({ title: validatedTitle.value, companyId: company.id });
   state.retros.push(retro);
   if (!persistRetro(retro)) {
     res.status(500).json({ error: "Unable to persist retro." });
     return;
   }
-  broadcastRetrosToLobby(teamId);
+  broadcastRetrosToLobby(company.id);
   res.status(201).json({ retro });
 });
 
@@ -816,15 +817,15 @@ app.post("/api/retros/:id/close", auth.requireAuth, requireEntitled, (req, res) 
     return;
   }
   broadcastToRetro(retro.id, { type: "retroClosed", retro });
-  broadcastRetrosToLobby(retro.teamId);
+  broadcastRetrosToLobby(retro.companyId);
   res.json({ retro });
 });
 
 app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => {
-  const teamNames = new Map((req.user.teams || []).map((t) => [t.id, t.name]));
+  const company = req.user.company;
   const actions = [];
   state.retros.forEach((retro) => {
-    if (!boardTeamAllowed(retro, req.user.teams)) {
+    if (!boardCompanyAllowed(retro, company)) {
       return;
     }
     (retro.actions || []).forEach((action) => {
@@ -838,8 +839,8 @@ app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => 
         dueDate: action.dueDate || "",
         notes: action.notes || "",
         status: action.status || "todo",
-        teamId: retro.teamId,
-        team: teamNames.get(retro.teamId) || retro.teamId,
+        companyId: retro.companyId,
+        company: company ? company.name : retro.companyId,
         retroTitle: retro.title,
         createdAt: retro.createdAt,
         closed: retro.closed
