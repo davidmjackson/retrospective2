@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/theme-contrast.test.js tests/db-schema.test.js tests/upgrade-auth.test.js tests/team-access.test.js",
+    "test": "node --test tests/theme-contrast.test.js tests/db-schema.test.js tests/upgrade-auth.test.js tests/company-access.test.js",
     "test:e2e": "playwright test",
     "db:migrate": "node scripts/db-maintenance.js migrate",
     "db:retention": "node scripts/db-maintenance.js retention",
