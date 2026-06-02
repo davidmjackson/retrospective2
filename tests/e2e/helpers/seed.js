@@ -8,7 +8,8 @@ function seedSession({
   id = "s-e2e",
   userId = "u-e2e",
   entitled = true,
-  teams = [{ id: "t1", name: "Alpha", role: "lead" }]
+  teams = [{ id: "t1", name: "Alpha", role: "lead" }],
+  company = { id: "co1", name: "Acme" }
 } = {}) {
   fs.mkdirSync(path.dirname(DB), { recursive: true });
   const store = createSessionsStore(DB);
@@ -19,9 +20,10 @@ function seedSession({
     centralSessionId: `c-${id}`,
     expiresAt: Date.now() + 60 * 60 * 1000,
     entitled,
-    teams
+    teams,
+    company
   });
-  return { id, userId, teams };
+  return { id, userId, teams, company };
 }
 
 module.exports = { seedSession, DB };
