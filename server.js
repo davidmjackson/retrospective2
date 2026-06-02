@@ -897,7 +897,7 @@ app.put("/api/actions", auth.requireAuth, requireEntitled, (req, res) => {
     nextDueDate = validatedDueDate.value;
   }
   const retro = getRetro(validatedRetroId.value);
-  if (!retro || !boardTeamAllowed(retro, req.user.teams)) {
+  if (!retro || !boardCompanyAllowed(retro, req.user.company)) {
     res.status(404).json({ error: "Retro not found." });
     return;
   }
