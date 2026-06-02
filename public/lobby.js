@@ -1,4 +1,4 @@
-// Lobby: hub identity (via /api/me) + self-declared name/role + team picker.
+// Lobby: hub identity (via /api/me) + self-declared name/role + company scope.
 const userSummary = document.getElementById("user-summary");
 const retroList = document.getElementById("retro-list");
 const sortSelect = document.getElementById("sort-select");
@@ -6,11 +6,10 @@ const createForm = document.getElementById("create-form");
 const createTitle = document.getElementById("create-title");
 const nameInput = document.getElementById("display-name");
 const roleSelect = document.getElementById("role-select");
-const teamSelect = document.getElementById("team-select");
+const companyName = document.getElementById("company-name");
 const logoutBtn = document.getElementById("logout-btn");
 
-let teams = [];
-let currentTeamId = null;
+let currentCompany = null;
 let retros = [];
 let lobbySocket = null;
 
@@ -121,12 +120,10 @@ function renderRetros() {
 }
 
 async function loadRetros() {
-  if (!currentTeamId) {
+  if (!currentCompany) {
     return;
   }
-  const response = await fetchWithAuth(
-    `/api/retros?teamId=${encodeURIComponent(currentTeamId)}`
-  );
+  const response = await fetchWithAuth("/api/retros");
   if (!response) {
     return;
   }
@@ -136,7 +133,7 @@ async function loadRetros() {
 }
 
 function connectLobbySocket() {
-  if (!currentTeamId) {
+  if (!currentCompany) {
     return;
   }
   if (lobbySocket) {
@@ -149,7 +146,6 @@ function connectLobbySocket() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const query = new URLSearchParams({
     view: "lobby",
-    teamId: currentTeamId,
     name: getDisplayName() || "Anonymous",
     role: getSelectedRole()
   });
@@ -176,13 +172,13 @@ if (createForm) {
   createForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = createTitle.value.trim();
-    if (!title || !currentTeamId) {
+    if (!title || !currentCompany) {
       return;
     }
     const response = await fetchWithAuth("/api/retros", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, teamId: currentTeamId })
+      body: JSON.stringify({ title })
     });
     if (!response || !response.ok) {
       return;
@@ -197,15 +193,6 @@ if (createForm) {
   });
 }
 
-function onTeamChange() {
-  currentTeamId = teamSelect.value || null;
-  if (currentTeamId) {
-    localStorage.setItem("retroTeamId", currentTeamId);
-  }
-  loadRetros();
-  connectLobbySocket();
-}
-
 async function init() {
   const response = await fetch("/api/me", { credentials: "same-origin" });
   if (!response.ok) {
@@ -213,22 +200,13 @@ async function init() {
     return;
   }
   const data = await response.json();
-  teams = data.teams || [];
-  if (!teams.length) {
-    userSummary.textContent = "You are not a member of any team yet.";
+  currentCompany = data.company || null;
+  if (!currentCompany || !currentCompany.id) {
+    userSummary.textContent = "No company on your account yet. Please sign in again.";
+    if (companyName) companyName.textContent = "-";
     return;
   }
-  teamSelect.innerHTML = "";
-  teams.forEach((team) => {
-    const opt = document.createElement("option");
-    opt.value = team.id;
-    opt.textContent = team.name;
-    teamSelect.appendChild(opt);
-  });
-  const saved = localStorage.getItem("retroTeamId");
-  currentTeamId = teams.some((team) => team.id === saved) ? saved : teams[0].id;
-  teamSelect.value = currentTeamId;
-  teamSelect.addEventListener("change", onTeamChange);
+  if (companyName) companyName.textContent = currentCompany.name || currentCompany.id;
 
   const name = getDisplayName();
   userSummary.textContent = name ? `Signed in as ${name}` : "Enter your name to begin";
