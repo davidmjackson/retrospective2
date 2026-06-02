@@ -958,7 +958,6 @@ function readConnParams(req) {
   return {
     retroId: url.searchParams.get("retroId"),
     view: url.searchParams.get("view"),
-    teamId: url.searchParams.get("teamId"),
     name: rawName || "Anonymous",
     role: ALLOWED_ROLES.has(rawRole) ? rawRole : "participant"
   };
@@ -970,35 +969,48 @@ wss.on("connection", (ws, req) => {
     ws.close();
     return;
   }
-  const { retroId, view, teamId, name, role } = readConnParams(req);
-  const teams = Array.isArray(ws.teams) ? ws.teams : [];
+  const { retroId, view, name, role } = readConnParams(req);
+  const company = ws.company || null;
+  const anonymous = !!ws.anonymous;
 
   if (view === "lobby") {
-    if (!teamIdInTeams(teamId, teams)) {
-      ws.send(JSON.stringify({ type: "error", message: "Not a member of that team." }));
+    if (anonymous || !company || !company.id) {
+      ws.send(JSON.stringify({ type: "error", message: "Sign in to use the lobby." }));
       ws.close();
       return;
     }
     const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    clients.set(ws, { id: clientId, name, team: teamId, role, view: "lobby" });
-    joinLobbyRoom(teamId, ws);
-    ws.send(JSON.stringify({ type: "retros", retros: listRetrosForTeam(teamId) }));
+    clients.set(ws, { id: clientId, name, company: company.id, role, view: "lobby", anonymous: false });
+    joinLobbyRoom(company.id, ws);
+    ws.send(JSON.stringify({ type: "retros", retros: listRetrosForCompany(company.id) }));
     ws.on("close", () => {
       clients.delete(ws);
-      leaveLobbyRoom(teamId, ws);
+      leaveLobbyRoom(company.id, ws);
     });
     return;
   }
 
   const retro = retroId ? getRetro(retroId) : null;
-  if (!boardTeamAllowed(retro, teams)) {
+  if (!retro) {
+    ws.send(JSON.stringify({ type: "error", message: "Retro not found." }));
+    ws.close();
+    return;
+  }
+  if (anonymous) {
+    if (retro.id !== ws.anonRetroId || retro.closed) {
+      ws.send(JSON.stringify({ type: "error", message: "This retro is not available." }));
+      ws.close();
+      return;
+    }
+  } else if (!boardCompanyAllowed(retro, company)) {
     ws.send(JSON.stringify({ type: "error", message: "Retro not found." }));
     ws.close();
     return;
   }
 
+  const effectiveRole = anonymous ? "participant" : role;
   const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  clients.set(ws, { id: clientId, name, retroId, role });
+  clients.set(ws, { id: clientId, name, retroId, role: effectiveRole, anonymous });
   joinRoom(retroId, ws);
   ws.send(JSON.stringify({ type: "init", retro }));
 
