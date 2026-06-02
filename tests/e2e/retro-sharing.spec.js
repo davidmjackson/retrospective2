@@ -73,4 +73,8 @@ test("a closed board rejects the share link", async ({ page, playwright, baseURL
   expect(meta.status()).toBe(410);
   await page.goto(`/join?token=${retro.shareToken}`);
   await expect(page.locator("#join-error")).toContainText("ended");
+  // The name form must be genuinely hidden on a dead link — not just visually
+  // present-but-erroring. (A visible form degrades to an empty GET that strips
+  // the token and shows "missing its code".)
+  await expect(page.locator("#join-form")).toBeHidden();
 });

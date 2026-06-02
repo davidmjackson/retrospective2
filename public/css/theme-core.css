@@ -88,6 +88,11 @@
  * ------------------------------------------------------------------------ */
 *, *::before, *::after { box-sizing: border-box; }
 
+/* The HTML [hidden] attribute must always win. Layout classes such as
+ * .form-grid / .timer-controls set display, which otherwise overrides it and
+ * leaves elements visible when JS sets hidden=true. */
+[hidden] { display: none !important; }
+
 html, body { height: 100%; margin: 0; }
 
 body {

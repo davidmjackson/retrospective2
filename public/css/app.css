@@ -989,12 +989,6 @@
   gap: 12px;
 }
 
-/* The display:grid above otherwise overrides the [hidden] attribute, leaving
-   facilitator-only timer controls visible to participants and anonymous joiners. */
-.timer-controls[hidden] {
-  display: none !important;
-}
-
 .timer-set {
   display: grid;
   grid-template-columns: 34px minmax(64px, 1fr) 34px;
