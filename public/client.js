@@ -66,7 +66,9 @@ const columnLabels = {
 };
 
 const params = new URLSearchParams(window.location.search);
-const retroId = params.get("retroId");
+const shareToken = params.get("token");
+const isAnon = !!shareToken;
+let retroId = params.get("retroId") || params.get("board");
 
 let currentState = {
   columns: {
@@ -106,7 +108,7 @@ function pinColorFor(note) {
 let freshCardIds = new Set();
 
 if (!retroId) {
-  window.location.href = "/lobby";
+  window.location.href = isAnon ? "/join" : "/lobby";
 }
 
 function handleUnauthorized(response) {
@@ -491,6 +493,9 @@ timerReset.addEventListener("click", () => {
 });
 
 updateTimerDisplay();
+if (isAnon) {
+  document.body.classList.add("anon");
+}
 document.addEventListener("click", unlockTimerSound, { once: true });
 
 function applyReadOnlyState() {
@@ -505,7 +510,7 @@ if (timerControls) {
 }
 
 const drake = dragula([columns.well, columns.improve, columns.continue], {
-  moves: () => !isReadOnly
+  moves: () => !isReadOnly && !isAnon
 });
 
 const handleDragUpdate = (el, target, source, sibling) => {
@@ -710,6 +715,52 @@ if (noteForm) {
   });
 }
 
+const inviteLinkBtn = document.getElementById("copy-invite-link");
+
+function maybeShowInviteLink(retro) {
+  if (!inviteLinkBtn) return;
+  if (isAnon || !retro || !retro.shareToken) {
+    inviteLinkBtn.hidden = true;
+    return;
+  }
+  inviteLinkBtn.hidden = false;
+  inviteLinkBtn.dataset.shareToken = retro.shareToken;
+}
+
+if (inviteLinkBtn) {
+  inviteLinkBtn.addEventListener("click", async () => {
+    const token = inviteLinkBtn.dataset.shareToken;
+    if (!token) return;
+    const url = `${window.location.origin}/join?token=${encodeURIComponent(token)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      inviteLinkBtn.textContent = "Link copied!";
+      setTimeout(() => {
+        inviteLinkBtn.textContent = "Copy invite link";
+      }, 2000);
+    } catch (err) {
+      window.prompt("Copy this invite link:", url);
+    }
+  });
+}
+
+function applyRetroMeta(retro) {
+  if (!retro) return;
+  retroTitle.textContent = retro.title;
+  retroMeta.textContent = retro.createdAt ? new Date(retro.createdAt).toLocaleString() : "";
+  isReadOnly = !!retro.closed;
+  retroStatus.classList.remove("open", "closed");
+  if (retro.closed) {
+    retroStatus.textContent = `Closed ${retro.closedAt ? `· ${new Date(retro.closedAt).toLocaleDateString()}` : ""}`;
+    retroStatus.classList.add("closed");
+  } else {
+    retroStatus.textContent = "Open";
+    retroStatus.classList.add("open");
+  }
+  applyReadOnlyState();
+  maybeShowInviteLink(retro);
+}
+
 async function loadRetroMeta() {
   const response = await fetchWithAuth(
     `/api/retros/${encodeURIComponent(retroId)}`
@@ -727,18 +778,7 @@ async function loadRetroMeta() {
     window.location.href = "/lobby";
     return;
   }
-  retroTitle.textContent = retro.title;
-  retroMeta.textContent = new Date(retro.createdAt).toLocaleString();
-  isReadOnly = retro.closed;
-  retroStatus.classList.remove("open", "closed");
-  if (retro.closed) {
-    retroStatus.textContent = `Closed ${retro.closedAt ? `· ${new Date(retro.closedAt).toLocaleDateString()}` : ""}`;
-    retroStatus.classList.add("closed");
-  } else {
-    retroStatus.textContent = "Open";
-    retroStatus.classList.add("open");
-  }
-  applyReadOnlyState();
+  applyRetroMeta(retro);
 }
 
 function connectSocket() {
@@ -746,8 +786,11 @@ function connectSocket() {
   const query = new URLSearchParams({
     retroId,
     name: username || "Anonymous",
-    role: userRole
+    role: isAnon ? "participant" : userRole
   });
+  if (shareToken) {
+    query.set("token", shareToken);
+  }
   socket = new WebSocket(
     `${socketProtocol}://${location.host}/ws?${query.toString()}`
   );
@@ -794,6 +837,9 @@ function connectSocket() {
         });
       }
       currentState = data.retro;
+      if (data.type === "init") {
+        applyRetroMeta(data.retro);
+      }
       renderState(currentState);
       if (currentState.timer) {
         remainingSeconds = currentState.timer.remainingSeconds;
@@ -851,13 +897,19 @@ function loadSession() {
       ? "facilitator"
       : "participant";
   isFacilitator = userRole === "facilitator";
+  if (isAnon) {
+    userRole = "participant";
+    isFacilitator = false;
+  }
   applyReadOnlyState();
   return { name: username, role: userRole };
 }
 
 async function init() {
   loadSession();
-  await loadRetroMeta();
+  if (!isAnon) {
+    await loadRetroMeta();
+  }
   connectSocket();
 }
 
