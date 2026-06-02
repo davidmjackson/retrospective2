@@ -1038,6 +1038,9 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
+      if (!actor || actor.anonymous) {
+        return;
+      }
       const entry = clients.get(ws);
       if (!entry || entry.role !== "facilitator") {
         return;
@@ -1127,6 +1130,9 @@ wss.on("connection", (ws, req) => {
       if (retro.closed) {
         return;
       }
+      if (!actor || actor.anonymous) {
+        return;
+      }
       const result = moveCardInRetro(retro, data, actor);
       if (result.error) {
         return;
@@ -1137,6 +1143,9 @@ wss.on("connection", (ws, req) => {
 
     if (data.type === "createAction") {
       if (retro.closed) {
+        return;
+      }
+      if (!actor || actor.anonymous) {
         return;
       }
       const result = createActionFromCard(retro, data, actor);
