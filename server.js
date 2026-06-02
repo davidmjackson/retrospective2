@@ -18,8 +18,8 @@ const {
   applyRetention
 } = require("./db");
 const { createAuthClient } = require("@suite/auth-client");
-const { authenticateUpgrade } = require("./lib/upgradeAuth");
-const { teamIdInTeams, boardTeamAllowed } = require("./lib/teamAccess");
+const { decideUpgrade } = require("./lib/upgradeAuth");
+const { boardCompanyAllowed } = require("./lib/companyAccess");
 
 const app = express();
 const server = http.createServer(app);
@@ -95,11 +95,12 @@ const stateFile = path.join(__dirname, "state.json");
 const dbFile = process.env.RETRO_DB_PATH || path.join(__dirname, "retros.db");
 const db = openDatabase(dbFile);
 
-function createRetro({ title, teamId }) {
+function createRetro({ title, companyId }) {
   return normalizeRetro({
     id: `retro-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
-    teamId,
+    companyId,
+    shareToken: crypto.randomBytes(24).toString("hex"),
     createdAt: new Date().toISOString(),
     closed: false,
     closedAt: null,
@@ -543,7 +544,7 @@ function persistActionAndBroadcastRetro(retro, mutation) {
 }
 
 function ensureBoardAccess(req, res, retro) {
-  if (!retro || !boardTeamAllowed(retro, req.user.teams)) {
+  if (!retro || !boardCompanyAllowed(retro, req.user.company)) {
     res.status(404).json({ error: "Retro not found." });
     return false;
   }
@@ -596,17 +597,27 @@ function getRetro(id) {
   return state.retros.find((retro) => retro.id === id);
 }
 
-function listRetrosForTeam(teamId) {
+function listRetrosForCompany(companyId) {
   return state.retros
-    .filter((retro) => retro.teamId === teamId)
+    .filter((retro) => retro.companyId === companyId)
     .map((retro) => ({
       id: retro.id,
       title: retro.title,
-      teamId: retro.teamId,
+      companyId: retro.companyId,
       createdAt: retro.createdAt,
       closed: retro.closed,
       closedAt: retro.closedAt
     }));
+}
+
+function findBoardByToken(token) {
+  if (!token) return null;
+  return state.retros.find((retro) => retro.shareToken === token) || null;
+}
+
+function lookupOpenBoardByToken(token) {
+  const retro = findBoardByToken(token);
+  return retro ? { id: retro.id, closed: retro.closed } : null;
 }
 
 function listPresence(retroId) {
@@ -659,10 +670,10 @@ function broadcastToLobby(teamName, payload) {
   }
 }
 
-function broadcastRetrosToLobby(teamName) {
-  broadcastToLobby(teamName, {
+function broadcastRetrosToLobby(companyId) {
+  broadcastToLobby(companyId, {
     type: "retros",
-    retros: listRetrosForTeam(teamName)
+    retros: listRetrosForCompany(companyId)
   });
 }
 
