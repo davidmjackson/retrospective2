@@ -34,9 +34,8 @@ test("anonymous participant joins, has no timer or create-action controls, can a
   await page.waitForURL(/\/shared\?/, { timeout: 10000 });
   await expect(page.locator("#col-well")).toBeVisible({ timeout: 10000 });
   await expect(page.locator("body.anon")).toHaveCount(1);
-  // The JS correctly sets hidden="", but the CSS rule .timer-controls{display:grid}
-  // overrides the UA hidden style — so we assert the attribute rather than visibility.
-  await expect(page.locator(".timer-controls")).toHaveAttribute("hidden");
+  // Facilitator timer controls must be genuinely hidden from anonymous joiners.
+  await expect(page.locator(".timer-controls")).toBeHidden();
   await expect(page.locator(".create-action-btn")).toHaveCount(0);
 
   // Add a card via the note dialog
