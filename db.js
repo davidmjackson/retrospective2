@@ -613,7 +613,7 @@ function loadRetrosFromJsonFile(stateFile) {
       const migrated = normalizeRetro({
         id: "retro-1",
         title: "Retrospective",
-        teamId: "",
+        companyId: "",
         createdAt: new Date().toISOString(),
         closed: false,
         closedAt: null,
