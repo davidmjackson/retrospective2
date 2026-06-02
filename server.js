@@ -36,14 +36,21 @@ const auth = createAuthClient({
 
 server.on("upgrade", async (req, socket, head) => {
   socket.on("error", () => socket.destroy());
-  const url = String(req.url || "");
-  if (url !== "/ws" && !url.startsWith("/ws?")) {
+  const rawUrl = String(req.url || "");
+  if (rawUrl !== "/ws" && !rawUrl.startsWith("/ws?")) {
     socket.destroy();
     return;
   }
+  const parsed = new URL(rawUrl, `http://${req.headers.host}`);
+  const shareToken = parsed.searchParams.get("token");
   let result;
   try {
-    result = await authenticateUpgrade(auth.verifySession, req.headers.cookie);
+    result = await decideUpgrade(
+      auth.verifySession,
+      req.headers.cookie,
+      shareToken,
+      lookupOpenBoardByToken
+    );
   } catch (err) {
     console.warn("WS upgrade auth error:", err);
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
@@ -56,8 +63,15 @@ server.on("upgrade", async (req, socket, head) => {
     return;
   }
   wss.handleUpgrade(req, socket, head, (ws) => {
-    ws.hubUserId = result.context.userId;
-    ws.teams = result.context.teams;
+    if (result.anonymous) {
+      ws.anonymous = true;
+      ws.company = null;
+      ws.anonRetroId = result.boardId;
+    } else {
+      ws.anonymous = false;
+      ws.hubUserId = result.context.userId;
+      ws.company = result.context.company || null;
+    }
     wss.emit("connection", ws, req);
   });
 });
