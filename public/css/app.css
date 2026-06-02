@@ -1896,3 +1896,13 @@
     padding-bottom: 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Anonymous visitor overrides
+ */
+body.anon .create-action-btn {
+  display: none !important;
+}
+.invite-link-btn {
+  cursor: pointer;
+}
