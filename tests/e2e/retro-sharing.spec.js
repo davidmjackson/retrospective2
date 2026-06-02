@@ -53,6 +53,11 @@ test("anonymous participant joins, has no timer or create-action controls, can a
   const initialVotes = await voteCount.textContent();
   await voteBtn.click();
   await expect(voteCount).not.toHaveText(initialVotes, { timeout: 5000 });
+
+  // Now that a real card exists, prove the promote-to-action control is hidden
+  // from the anonymous joiner (the control is rendered per-card but hidden by
+  // the body.anon CSS rule). This is the genuine "anon cannot facilitate" check.
+  await expect(page.locator("#col-well .create-action-btn")).toBeHidden();
 });
 
 test("a closed board rejects the share link", async ({ page, playwright, baseURL }) => {
