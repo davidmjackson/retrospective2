@@ -144,11 +144,11 @@
 /* ---------------------------------------------------------------------------
  * Page shells
  * ------------------------------------------------------------------------ */
-.ins .lobby-page,
-.ins .actions-page,
-.ins .admin-page,
-.ins .legal-page,
-.ins .retro-page{min-height:100vh; display:flex; flex-direction:column; background:var(--bone);}
+.ins.lobby-page,
+.ins.actions-page,
+.ins.admin-page,
+.ins.legal-page,
+.ins.retro-page{min-height:100vh; display:flex; flex-direction:column; background:var(--bone);}
 
 /* ---------------------------------------------------------------------------
  * Panel (retro-specific 20px-padding surface)
@@ -228,7 +228,7 @@
 /* ---------------------------------------------------------------------------
  * Retrospective board (retro-page) chrome
  * ------------------------------------------------------------------------ */
-.ins .retro-page{min-height:100vh; padding-bottom:62px;}
+.ins.retro-page{min-height:100vh; padding-bottom:62px;}
 .ins .session-header{width:100%; max-width:none; margin:0; padding:26px 30px 24px; background:var(--panel); border-bottom:1px solid var(--line);}
 .ins .session-title{display:flex; align-items:flex-start; gap:22px; min-width:0;}
 .ins .menu-link{width:28px; height:28px; margin-top:4px; display:inline-flex; align-items:center; justify-content:center; color:var(--soft); text-decoration:none; font-size:1.35rem; line-height:1;}
@@ -502,5 +502,5 @@
   .ins .timer-actions button{padding-left:8px; padding-right:8px;}
   .ins .tips-bar{position:static; flex-wrap:wrap; padding:14px 16px;}
   .ins .tips-bar a{margin-left:0;}
-  .ins .retro-page{padding-bottom:0;}
+  .ins.retro-page{padding-bottom:0;}
 }
