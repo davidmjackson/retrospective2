@@ -5,17 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Actions Report</title>
     <link rel="stylesheet" href="vendor/dragula/dragula.min.css" />
-    <link rel="stylesheet" href="/css/theme-core.css" />
-    <link rel="stylesheet" href="/css/theme-retro.css" />
-    <link rel="stylesheet" href="/css/app.css" />
-    <link rel="stylesheet" href="/css/breathing-waves.css" />
+    <link rel="stylesheet" href="/css/instrument-core.css" />
+    <link rel="stylesheet" href="/css/retro.css" />
   </head>
-  <body class="page actions-page">
+  <body class="ins actions-page" data-app="retro">
     <header class="topbar">
       <span class="topbar-lead">
         <a class="back-link" href="/lobby">Back to Lobby</a>
         <p class="brand">
-          <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
+          <svg class="mk" width="22" height="22" aria-hidden="true"><use href="/illos/glyphs.svg#glyph-retro"/></svg>
           <span>Retrospective</span>
         </p>
       </span>
@@ -24,14 +22,11 @@
       </div>
     </header>
 
-    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
-      <canvas></canvas>
-      <div class="header-content">
-        <p class="eyebrow">Report</p>
-        <h1 class="header-title">Actions Report</h1>
-        <p class="header-subtitle">Track actions across every team and retrospective.</p>
-      </div>
-    </header>
+    <div class="band"><div class="waves"></div><div class="band-in">
+      <div class="eyebrow">Report</div>
+      <h1>Actions Report</h1>
+      <p class="sub">Track actions across every team and retrospective.</p>
+    </div></div>
 
     <main class="page-content">
       <section class="instruction-banner actions-summary">
@@ -41,9 +36,10 @@
       <section class="actions-board" id="actions-board"></section>
     </main>
 
+    <footer class="app-footer"><a href="/license">License</a></footer>
     <script src="vendor/dragula/dragula.min.js"></script>
     <script src="actions.js"></script>
-    <script src="breathing-waves.js"></script>
+    <script type="module" src="/js/oscilloscope.js"></script>
     <script src="/auth-client/heartbeat.js"></script>
   </body>
 </html>

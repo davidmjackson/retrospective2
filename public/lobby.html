@@ -4,15 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Retrospective Lobby</title>
-    <link rel="stylesheet" href="/css/theme-core.css" />
-    <link rel="stylesheet" href="/css/theme-retro.css" />
-    <link rel="stylesheet" href="/css/app.css" />
-    <link rel="stylesheet" href="/css/breathing-waves.css" />
+    <link rel="stylesheet" href="/css/instrument-core.css" />
+    <link rel="stylesheet" href="/css/retro.css" />
   </head>
-  <body class="page lobby-page">
+  <body class="ins lobby-page" data-app="retro">
     <header class="topbar">
       <p class="brand">
-        <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
+        <svg class="mk" width="22" height="22" aria-hidden="true"><use href="/illos/glyphs.svg#glyph-retro"/></svg>
         <span>Retrospective</span>
       </p>
       <div class="header-actions">
@@ -21,14 +19,11 @@
       </div>
     </header>
 
-    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
-      <canvas></canvas>
-      <div class="header-content">
-        <p class="eyebrow">Workspace</p>
-        <h1 class="header-title">Retrospectives</h1>
-        <p class="header-subtitle" id="user-summary">Loading user...</p>
-      </div>
-    </header>
+    <div class="band"><div class="waves"></div><div class="band-in">
+      <div class="eyebrow">Workspace</div>
+      <h1>Retrospectives</h1>
+      <p class="sub" id="user-summary">Loading user...</p>
+    </div></div>
 
     <main class="page-content">
       <section class="overview-grid">
@@ -94,8 +89,9 @@
       </section>
     </main>
 
+    <footer class="app-footer"><a href="/license">License</a></footer>
     <script src="lobby.js"></script>
-    <script src="breathing-waves.js"></script>
+    <script type="module" src="/js/oscilloscope.js"></script>
     <script src="/auth-client/heartbeat.js"></script>
   </body>
 </html>
