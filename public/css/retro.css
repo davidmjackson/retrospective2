@@ -134,11 +134,12 @@
 .ins .create-action-btn:hover{border-color:var(--accent); color:var(--accent);}
 .ins .create-action-btn:disabled{cursor:default; border-color:var(--ok-bg); background:var(--ok-bg); color:var(--ok);}
 
-/* Read-only board state */
-.ins .read-only .column-add{display:none;}
-.ins .read-only .vote-btn,
-.ins .read-only .create-action-btn,
-.ins .read-only .timer-actions button{pointer-events:none; opacity:0.55;}
+/* Read-only board state. `read-only` is toggled on <body>, which also carries
+   `ins` — so this is a COMPOUND selector (.ins.read-only), not a descendant. */
+.ins.read-only .column-add{display:none;}
+.ins.read-only .vote-btn,
+.ins.read-only .create-action-btn,
+.ins.read-only .timer-actions button{pointer-events:none; opacity:0.55;}
 
 /* ---------------------------------------------------------------------------
  * Page shells
@@ -456,8 +457,9 @@
 /* ---------------------------------------------------------------------------
  * Anonymous visitor overrides
  * ------------------------------------------------------------------------ */
-.ins body.anon .create-action-btn,
-body.anon .ins .create-action-btn{display:none !important;}
+/* `anon` is added to <body>, which also carries `ins` — COMPOUND selector.
+   SECURITY-RELEVANT: anonymous joiners must not see the create-action control. */
+.ins.anon .create-action-btn{display:none !important;}
 
 /* ---------------------------------------------------------------------------
  * Responsive overrides
