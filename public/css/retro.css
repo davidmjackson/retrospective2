@@ -1,0 +1,86 @@
+/* retro.css — Retro-owned layer over instrument-core.css.
+   Holds everything Instrument doesn't provide, re-pointed to Instrument tokens.
+   Loaded AFTER instrument-core.css. NOT part of the synced foundation. */
+
+.ins{
+  /* Spacing + radii + shadows Instrument doesn't define */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-6:24px; --s-8:32px; --s-12:48px;
+  --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-pill:999px;
+  --shadow-sm:0 1px 0 rgba(20,30,28,0.04);
+  --shadow-md:0 1px 0 rgba(20,30,28,0.04), 0 8px 24px rgba(20,30,28,0.06);
+  --shadow-lg:0 1px 0 rgba(20,30,28,0.04), 0 16px 44px rgba(20,30,28,0.10);
+  /* Semantic aliases mapped onto the Instrument palette */
+  --ok:var(--green); --ok-bg:var(--greenwash);
+  --warn:oklch(0.5 0.12 60); --warn-bg:var(--amberwash);
+  --err:oklch(0.5 0.13 25); --err-bg:color-mix(in oklab, oklch(0.5 0.13 25) 12%, var(--panel));
+  --info:var(--teal); --info-bg:var(--tealwash);
+  --accent-soft:var(--tealwash); --accent-deep:var(--accent); --accent-on:#fff;
+  --mono-font:'IBM Plex Mono', ui-monospace, monospace;
+  /* Retro column-tag category colours (used by .column-icon / .coltag) */
+  --col-start:var(--green); --col-stop:oklch(0.5 0.13 25); --col-continue:var(--teal);
+}
+
+/* The HTML [hidden] attribute must always win over layout display classes.
+   SECURITY-RELEVANT: keeps facilitator-only / dead-link UI hidden from anon joiners. */
+[hidden]{display:none !important;}
+
+/* Utilities not in Instrument (Instrument has .center/.muted) */
+.ins .kicker{font-family:var(--mono-font); font-size:0.66rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:var(--soft);}
+.ins .faint{color:var(--faint); font-size:0.85rem;}
+.ins .hidden{display:none !important;}
+
+/* Page wrapper (Retro uses .page-content for the main column, not Instrument's .page) */
+.ins .page-content{padding:var(--s-6); max-width:1040px; margin:0 auto;}
+.ins .page-narrow{max-width:560px;}
+
+/* App-footer link colour (Instrument provides .app-footer; keep its link faint) */
+.ins .app-footer a{color:var(--faint);}
+
+/* Bare inputs/selects/textareas (Retro markup uses .field > span, not .input) */
+.ins input[type="text"], .ins input[type="email"], .ins input[type="password"],
+.ins input[type="number"], .ins select, .ins textarea{
+  width:100%; padding:10px 12px; border:1px solid var(--line2); border-radius:var(--r-md);
+  background:var(--bone); color:var(--ink); font:inherit;
+  transition:border-color 120ms ease, box-shadow 120ms ease;
+}
+.ins input::placeholder, .ins textarea::placeholder{color:var(--faint);}
+.ins input:focus, .ins select:focus, .ins textarea:focus{
+  outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--tealwash);
+}
+.ins .field{display:block; margin-bottom:var(--s-4);}
+.ins .field > span{display:block; font-weight:600; font-size:0.85rem; margin-bottom:var(--s-1); color:var(--ink);}
+
+/* Retro's own button classes (kept in markup + JS; restyled onto Instrument) */
+.ins .primary-btn, .ins .secondary-btn, .ins .link-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--s-2);
+  padding:9px 18px; min-height:38px; border-radius:var(--r-pill);
+  font-family:inherit; font-weight:700; font-size:0.92rem; cursor:pointer;
+  text-decoration:none; border:1px solid transparent;
+  transition:transform 120ms ease, filter 120ms ease, box-shadow 120ms ease,
+             border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+.ins .primary-btn{background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 1px 2px rgba(20,30,28,0.12);}
+.ins .primary-btn:hover{filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 4px 12px rgba(20,30,28,0.16);}
+.ins .secondary-btn{background:var(--panel); border-color:var(--line2); color:var(--ink);}
+.ins .secondary-btn:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-1px);}
+.ins .link-btn{background:transparent; border-color:transparent; color:var(--accent); min-height:auto; padding:6px 8px;}
+.ins .link-btn:hover{text-decoration:underline;}
+.ins .primary-btn:disabled, .ins .secondary-btn:disabled, .ins .link-btn:disabled{opacity:0.55; cursor:not-allowed; transform:none; filter:none;}
+.ins .btn-block{width:100%;}
+
+/* Tags + notice variants (Instrument has base .notice + .pill only) */
+.ins .tag{display:inline-block; padding:3px 9px; border-radius:var(--r-sm); background:var(--bone); color:var(--soft); font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;}
+.ins .tag-ok{background:var(--ok-bg); color:var(--ok);}
+.ins .tag-warn{background:var(--warn-bg); color:var(--warn);}
+.ins .tag-err{background:var(--err-bg); color:var(--err);}
+.ins .tag-info{background:var(--info-bg); color:var(--info);}
+.ins .notice-error{background:var(--err-bg); border-color:var(--err); color:var(--err);}
+.ins .notice-ok{background:var(--ok-bg); border-color:var(--ok); color:var(--ok);}
+.ins .notice-info{background:var(--info-bg); border-color:color-mix(in oklab, var(--teal) 40%, var(--line2)); color:var(--ink);}
+
+/* Modal (Instrument has no modal component) */
+.ins .modal-overlay{position:fixed; inset:0; background:oklch(0.235 0.013 250 / 0.48); display:flex; align-items:center; justify-content:center; z-index:50; padding:var(--s-4);}
+.ins .modal-overlay.hidden{display:none;}
+.ins .modal-content{width:min(420px,100%); background:var(--panel); border:1px solid var(--line2); border-radius:var(--r-xl); box-shadow:var(--shadow-lg); padding:var(--s-6);}
+.ins .modal-content h2{margin:0 0 var(--s-2);}
+.ins .modal-actions{display:flex; justify-content:flex-end; gap:var(--s-2); margin-top:var(--s-6);}
