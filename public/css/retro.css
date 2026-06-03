@@ -30,7 +30,7 @@
 .ins .hidden{display:none !important;}
 
 /* Page wrapper (Retro uses .page-content for the main column, not Instrument's .page) */
-.ins .page-content{padding:var(--s-6); max-width:1040px; margin:0 auto;}
+.ins .page-content{width:min(1180px, calc(100vw - 48px)); margin:0 auto 40px; display:grid; gap:20px;}
 .ins .page-narrow{max-width:560px;}
 
 /* App-footer link colour (Instrument provides .app-footer; keep its link faint) */
@@ -143,11 +143,11 @@
 /* ---------------------------------------------------------------------------
  * Page shells
  * ------------------------------------------------------------------------ */
-.ins .page{min-height:100vh; display:flex; flex-direction:column; padding:0; max-width:none;}
 .ins .lobby-page,
 .ins .actions-page,
 .ins .admin-page,
-.ins .legal-page{background:var(--bone);}
+.ins .legal-page,
+.ins .retro-page{min-height:100vh; display:flex; flex-direction:column; background:var(--bone);}
 
 /* ---------------------------------------------------------------------------
  * Panel (retro-specific 20px-padding surface)
@@ -350,7 +350,7 @@
 .ins .sort-controls select{min-height:34px; padding:6px 30px 6px 10px; border:1px solid var(--line2); border-radius:var(--r-md); background:var(--panel);}
 .ins .retro-list{list-style:none; padding:0; margin:0; display:grid; gap:12px;}
 .ins .retro-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border-radius:var(--r-md); background:var(--bone); border:1px solid var(--line);}
-.ins .retro-item:hover{background:var(--panel); border-color:var(--accent); box-shadow:0 0 0 3px var(--tealwash), 0 8px 22px oklch(0.45 0.077 162 / 0.08);}
+.ins .retro-item:hover{background:var(--panel); border-color:var(--accent); box-shadow:0 0 0 3px oklch(0.58 0.088 206 / 0.18), 0 8px 22px oklch(0.45 0.077 162 / 0.08);}
 .ins .retro-info h3{margin:0 0 4px; font-size:1.05rem;}
 .ins .retro-info p{margin:0; color:var(--soft); font-size:0.86rem;}
 .ins .retro-actions{display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap;}
