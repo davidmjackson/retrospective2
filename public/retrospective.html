@@ -5,17 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Retrospective Board</title>
     <link rel="stylesheet" href="vendor/dragula/dragula.min.css" />
-    <link rel="stylesheet" href="/css/theme-core.css" />
-    <link rel="stylesheet" href="/css/theme-retro.css" />
-    <link rel="stylesheet" href="/css/app.css" />
-    <link rel="stylesheet" href="/css/breathing-waves.css" />
+    <link rel="stylesheet" href="/css/instrument-core.css" />
+    <link rel="stylesheet" href="/css/retro.css" />
   </head>
-  <body class="retro-page cork-bg">
+  <body class="ins retro-page" data-app="retro">
     <header class="topbar">
       <span class="topbar-lead">
         <a class="menu-link" href="/lobby" aria-label="Back to Lobby">☰</a>
         <p class="brand">
-          <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
+          <svg class="mk" width="22" height="22" aria-hidden="true"><use href="/illos/glyphs.svg#glyph-retro"/></svg>
           <span>Retrospective</span>
         </p>
       </span>
@@ -29,18 +27,15 @@
       </div>
     </header>
 
-    <header class="header-band" data-breathing-waves data-wave-palette="retro" role="none">
-      <canvas></canvas>
-      <div class="header-content">
-        <p class="eyebrow">Session</p>
-        <div class="title-row">
-          <h1 class="header-title" id="retro-title">Retrospective</h1>
-          <div class="retro-status" id="retro-status"></div>
-          <button id="copy-invite-link" type="button" class="invite-link-btn" hidden>Copy invite link</button>
-        </div>
-        <p class="header-subtitle" id="retro-meta">Loading retro details...</p>
+    <div class="band"><div class="waves"></div><div class="band-in">
+      <div class="eyebrow">Session</div>
+      <div class="title-row">
+        <h1 id="retro-title">Retrospective</h1>
+        <div class="retro-status" id="retro-status"></div>
+        <button id="copy-invite-link" type="button" class="invite-link-btn" hidden>Copy invite link</button>
       </div>
-    </header>
+      <p class="sub" id="retro-meta">Loading retro details...</p>
+    </div></div>
 
     <main class="retro-shell">
       <section class="retro-workspace">
@@ -347,9 +342,10 @@
       </form>
     </dialog>
 
+    <footer class="app-footer"><a href="/license">License</a></footer>
     <script src="vendor/dragula/dragula.min.js"></script>
     <script src="client.js"></script>
-    <script src="breathing-waves.js"></script>
+    <script type="module" src="/js/oscilloscope.js"></script>
     <script src="/auth-client/heartbeat.js"></script>
   </body>
 </html>

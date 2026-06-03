@@ -15,23 +15,18 @@ function attachErrorListeners(page) {
   return errs;
 }
 
-async function assertSizedCanvas(band) {
+async function assertBand(page, title) {
+  const band = page.locator(".band").first();
+  await expect(band).toBeVisible();
+  await expect(band.locator("h1").first()).toContainText(title);
+  // oscilloscope.js mounts an <svg> trace into the empty .waves container.
   await expect
-    .poll(async () => band.locator("canvas").first().evaluate((c) => c.width))
+    .poll(async () => band.locator(".waves svg").count())
     .toBeGreaterThan(0);
 }
 
-async function assertBand(page, title) {
-  const band = page.locator("[data-breathing-waves] canvas").first();
-  await expect(band).toBeVisible();
-  await expect(band).toHaveAttribute("aria-hidden", "true");
-  const header = page.locator(".header-band[data-breathing-waves]").first();
-  await expect(header.locator(".header-title").first()).toContainText(title);
-  await assertSizedCanvas(header);
-}
-
-test.describe("breathing-waves header band", () => {
-  test("renders on lobby with aria-hidden canvas and correct title", async ({ page, context }) => {
+test.describe("Instrument oscilloscope band", () => {
+  test("renders on lobby with the oscilloscope trace and correct title", async ({ page, context }) => {
     const errs = attachErrorListeners(page);
     seedSession();
     await injectSession(context);

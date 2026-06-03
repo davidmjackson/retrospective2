@@ -4,27 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Retrospective Licence</title>
-    <link rel="stylesheet" href="/css/theme-core.css" />
-    <link rel="stylesheet" href="/css/theme-retro.css" />
-    <link rel="stylesheet" href="/css/app.css" />
-    <link rel="stylesheet" href="/css/breathing-waves.css" />
+    <link rel="stylesheet" href="/css/instrument-core.css" />
+    <link rel="stylesheet" href="/css/retro.css" />
+    <script type="module" src="/js/oscilloscope.js"></script>
   </head>
-  <body class="page legal-page">
-    <header class="header-band" data-breathing-waves data-wave-palette="retro">
-      <canvas></canvas>
-      <div class="header-content">
-        <p class="eyebrow">Legal</p>
-        <p class="brand">
-          <svg class="brand-glyph" aria-hidden="true"><use href="/illos/theme-illos.svg#pin"/></svg>
-          <span>Retrospective</span>
-        </p>
-        <h1 class="header-title">Retrospective App Proprietary Free-Use Licence</h1>
-        <p class="header-subtitle legal-updated">Copyright (c) 2026 David Jackson. All rights reserved.</p>
-      </div>
-    </header>
+  <body class="ins legal-page" data-app="retro">
+    <div class="band"><div class="waves"></div><div class="band-in">
+      <div class="eyebrow">Legal</div>
+      <h1>Retrospective App Proprietary Free-Use Licence</h1>
+      <p class="sub legal-updated">Copyright (c) 2026 David Jackson. All rights reserved.</p>
+    </div></div>
 
-    <main class="legal-shell">
+    <main class="legal-shell page-content page-narrow">
       <section class="panel legal-panel">
+        <p class="brand"><svg class="mk" width="22" height="22" aria-hidden="true"><use href="/illos/glyphs.svg#glyph-retro"/></svg> <span>Retrospective</span></p>
 
         <h2>Developer and Owner</h2>
         <p>
@@ -84,6 +77,6 @@
         <a class="secondary-btn legal-back-link" href="/">Return to sign in</a>
       </section>
     </main>
-    <script src="breathing-waves.js"></script>
+    <footer class="app-footer"><a href="/license">License</a></footer>
   </body>
 </html>
