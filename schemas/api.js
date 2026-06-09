@@ -17,13 +17,10 @@ const updateActionSchema = z.object({
   status: z.enum(["todo", "in_progress", "blocked", "done"]).optional(),
   notes: z.preprocess(trim, z.string().max(4000)).optional(),
   owner: z.preprocess(trim, z.string().max(80)).optional(),
-  dueDate: z.preprocess(
-    (v) => (v === undefined || v === null || v === "" ? "" : v),
-    z.union([
-      z.literal(""),
-      z.string().max(10).regex(/^\d{4}-\d{2}-\d{2}$/)
-    ])
-  ).optional()
+  dueDate: z.union([
+    z.literal(""),
+    z.string().max(10).regex(/^\d{4}-\d{2}-\d{2}$/)
+  ]).optional()
 });
 
 module.exports = { createRetroSchema, updateActionSchema };
