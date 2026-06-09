@@ -23,6 +23,8 @@ const {
 const { createAuthClient } = require("@suite/auth-client");
 const { decideUpgrade } = require("./lib/upgradeAuth");
 const { boardCompanyAllowed } = require("./lib/companyAccess");
+const { validateMessage } = require("./schemas/ws");
+const { createRetroSchema, updateActionSchema } = require("./schemas/api");
 
 const app = express();
 app.use(makeRequestLogger(logger));
@@ -804,6 +806,9 @@ app.post("/api/retros", auth.requireAuth, requireEntitled, (req, res) => {
     res.status(403).json({ error: "No company on your account. Please sign in again." });
     return;
   }
+  // Structural guard: ensure body is an object (coercion + unknown keys stripped).
+  const parsed = createRetroSchema.safeParse(req.body || {});
+  if (parsed.success) req.body = parsed.data;
   const { title } = req.body || {};
   const validatedTitle = validateText(title, "Title", maxRetroTitleLength, {
     required: true
@@ -878,6 +883,9 @@ app.get("/api/actions-report", auth.requireAuth, requireEntitled, (req, res) => 
 });
 
 app.put("/api/actions", auth.requireAuth, requireEntitled, (req, res) => {
+  // Structural guard: coerce + strip unknown keys.
+  const parsed = updateActionSchema.safeParse(req.body || {});
+  if (parsed.success) req.body = parsed.data;
   const { retroId, actionId, status, notes, owner, dueDate } = req.body || {};
   const validatedRetroId = validateId(retroId, "retroId");
   const validatedActionId = validateId(actionId, "actionId");
@@ -1026,11 +1034,20 @@ wss.on("connection", (ws, req) => {
     try {
       data = JSON.parse(raw.toString());
     } catch (err) {
+      logger.warn({ err }, "ws message parse error — dropping");
       return;
     }
     if (!isPlainObject(data)) {
       return;
     }
+
+    const msgType = typeof data.type === "string" ? data.type : "";
+    const validation = validateMessage(msgType, data);
+    if (!validation.ok) {
+      logger.warn({ err: validation.error, type: msgType }, "invalid ws payload — dropping");
+      return;
+    }
+    data = validation.data;
 
     const actor = clients.get(ws);
 

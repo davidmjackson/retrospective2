@@ -42,7 +42,9 @@ function makeErrorHandler({ logger, nodeEnv }) {
       (typeof req.accepts === "function" && req.accepts(["html", "json"]) === "json");
 
     if (wantsJson) {
-      return res.json({ error: isProd ? STATUS_CODES[status] || "Error" : err.message || "Error", reqId });
+      const body = { error: isProd ? STATUS_CODES[status] || "Error" : err.message || "Error", reqId };
+      if (err.fields) body.fields = err.fields;
+      return res.json(body);
     }
     const message = isProd ? "An unexpected error occurred." : err.stack || err.message || "Error";
     return res.type("html").send(errorPage({ message, reqId }));

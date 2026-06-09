@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/theme-drift.test.js tests/theme-contrast.test.js tests/db-schema.test.js tests/upgrade-auth.test.js tests/company-access.test.js tests/return-to-suite.test.js tests/pino-logger.test.js tests/pino-request-logger.test.js tests/pino-error-handler.test.js",
+    "test": "node --test tests/theme-drift.test.js tests/theme-contrast.test.js tests/db-schema.test.js tests/upgrade-auth.test.js tests/company-access.test.js tests/return-to-suite.test.js tests/pino-logger.test.js tests/pino-request-logger.test.js tests/pino-error-handler.test.js tests/validate.test.js tests/ws-validation.test.js tests/api-schemas.test.js",
     "test:e2e": "playwright test",
     "db:migrate": "node scripts/db-maintenance.js migrate",
     "db:retention": "node scripts/db-maintenance.js retention",
@@ -18,7 +18,8 @@
     "express": "^4.19.2",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
-    "ws": "^8.17.1"
+    "ws": "^8.17.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
