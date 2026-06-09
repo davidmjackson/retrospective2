@@ -4,6 +4,9 @@ const crypto = require("crypto");
 const http = require("http");
 const express = require("express");
 const { WebSocketServer, WebSocket } = require("ws");
+const { logger } = require("./lib/logger");
+const { makeRequestLogger } = require("./middleware/requestLogger");
+const { makeErrorHandler } = require("./middleware/errorHandler");
 const {
   normalizeRetro,
   openDatabase,
@@ -22,6 +25,7 @@ const { decideUpgrade } = require("./lib/upgradeAuth");
 const { boardCompanyAllowed } = require("./lib/companyAccess");
 
 const app = express();
+app.use(makeRequestLogger(logger));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
 
@@ -134,13 +138,13 @@ let state = { retros: [] };
 function initializeState(callback) {
   ensureSchema(db, (err) => {
     if (err) {
-      console.warn("Failed to initialize database.");
+      logger.warn({ err }, "Failed to initialize database.");
       callback();
       return;
     }
     loadRetros(db, (loadErr, retros) => {
       if (loadErr) {
-        console.warn("Failed to load retros from database.");
+        logger.warn({ err: loadErr }, "Failed to load retros from database.");
         callback();
         return;
       }
@@ -151,7 +155,7 @@ function initializeState(callback) {
       }
       seedFromJsonIfPresent(db, stateFile, (seedErr, seededRetros) => {
         if (seedErr) {
-          console.warn("Failed to seed from state.json.");
+          logger.warn({ err: seedErr }, "Failed to seed from state.json.");
           callback();
           return;
         }
@@ -167,7 +171,7 @@ function initializeState(callback) {
 function saveState() {
   saveRetros(db, state.retros, (err) => {
     if (err) {
-      console.warn("Failed to persist retros.");
+      logger.warn({ err }, "Failed to persist retros.");
     }
   });
 }
@@ -177,7 +181,7 @@ function persistRetro(retro) {
   saveRetro(db, retro, (err) => {
     if (err) {
       didSave = false;
-      console.warn("Failed to persist retro.");
+      logger.warn({ err }, "Failed to persist retro.");
     }
   });
   return didSave;
@@ -188,7 +192,7 @@ function persistRetroTimer(retro) {
   saveRetroTimer(db, retro, (err) => {
     if (err) {
       didSave = false;
-      console.warn("Failed to persist retro timer.");
+      logger.warn({ err }, "Failed to persist retro timer.");
     }
   });
   return didSave;
@@ -199,7 +203,7 @@ function persistRetroCard(retro, columnType, card) {
   saveRetroCard(db, retro, columnType, card, (err) => {
     if (err) {
       didSave = false;
-      console.warn("Failed to persist retro card.");
+      logger.warn({ err }, "Failed to persist retro card.");
     }
   });
   return didSave;
@@ -210,7 +214,7 @@ function persistRetroAction(retro, action) {
   saveRetroAction(db, retro, action, (err) => {
     if (err) {
       didSave = false;
-      console.warn("Failed to persist retro action.");
+      logger.warn({ err }, "Failed to persist retro action.");
     }
   });
   return didSave;
@@ -600,7 +604,7 @@ function runRetentionIfConfigured() {
   }
   applyRetention(db, retentionDays, (err) => {
     if (err) {
-      console.warn("Failed to apply retention policy.");
+      logger.warn({ err }, "Failed to apply retention policy.");
       return;
     }
     state.retros = state.retros.filter((retro) => !removedIds.includes(retro.id));
@@ -950,6 +954,8 @@ app.put("/api/actions", auth.requireAuth, requireEntitled, (req, res) => {
   res.json({ action });
 });
 
+app.use(makeErrorHandler({ logger, nodeEnv: process.env.NODE_ENV }));
+
 const ALLOWED_ROLES = new Set(["participant", "facilitator"]);
 
 function readConnParams(req) {
@@ -1196,7 +1202,7 @@ function startServer() {
 
   const port = Number.parseInt(process.env.PORT || "3001", 10);
   server.listen(port, () => {
-    console.log(`Retrospective board running on http://localhost:${port}`);
+    logger.info({ port }, "retro listening");
   });
 }
 
