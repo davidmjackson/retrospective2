@@ -7,6 +7,7 @@ const { WebSocketServer, WebSocket } = require("ws");
 const { logger } = require("./lib/logger");
 const { makeRequestLogger } = require("./middleware/requestLogger");
 const { makeErrorHandler } = require("./middleware/errorHandler");
+const { makeSecurityHeaders, DEFAULT_CSP } = require("./middleware/securityHeaders");
 const {
   normalizeRetro,
   openDatabase,
@@ -27,6 +28,8 @@ const { validateMessage } = require("./schemas/ws");
 const { createRetroSchema, updateActionSchema } = require("./schemas/api");
 
 const app = express();
+const csp = DEFAULT_CSP.replace("connect-src 'self'", "connect-src 'self' wss: ws:");
+app.use(makeSecurityHeaders({ contentSecurityPolicy: csp }));
 app.use(makeRequestLogger(logger));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
@@ -88,28 +91,6 @@ const lobbyRooms = new Map();
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      "script-src 'self'",
-      "style-src 'self'",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-      "font-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "frame-ancestors 'none'",
-      "form-action 'self'"
-    ].join("; ")
-  );
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Referrer-Policy", "same-origin");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  next();
-});
 
 const stateFile = path.join(__dirname, "state.json");
 const dbFile = process.env.RETRO_DB_PATH || path.join(__dirname, "retros.db");

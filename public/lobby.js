@@ -2,12 +2,18 @@
 const userSummary = document.getElementById("user-summary");
 const retroList = document.getElementById("retro-list");
 const sortSelect = document.getElementById("sort-select");
+const sessionForm = document.getElementById("session-form");
 const createForm = document.getElementById("create-form");
 const createTitle = document.getElementById("create-title");
 const nameInput = document.getElementById("display-name");
 const roleSelect = document.getElementById("role-select");
 const companyName = document.getElementById("company-name");
 const logoutBtn = document.getElementById("logout-btn");
+
+// Prevent default form submission on the session settings form (name/role inputs).
+if (sessionForm) {
+  sessionForm.addEventListener("submit", (e) => e.preventDefault());
+}
 
 let currentCompany = null;
 let retros = [];
